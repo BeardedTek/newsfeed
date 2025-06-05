@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const authToken = authMatch[1].trim();
 
   // Step 2: Use Auth token to fetch articles
-  const apiUrl = `${FRESHRSS_URL}/api/greader.php/reader/api/0/stream/contents/user/-/state/com.google/reading-list?output=json&n=50&ck=${Date.now()}`;
+  const apiUrl = `${FRESHRSS_URL}/api/greader.php/reader/api/0/stream/contents/user/-/state/com.google/reading-list?output=json&n=1000&ck=${Date.now()}`;
   const res = await fetch(apiUrl, {
     headers: {
       'Authorization': `GoogleLogin auth=${authToken}`,

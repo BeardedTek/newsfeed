@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { Spinner, Badge } from 'flowbite-react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense, useRef, useCallback } from 'react';
+import { Spinner, Badge, Select } from 'flowbite-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 function formatDate(timestamp: number) {
   const date = new Date(timestamp);
@@ -67,7 +67,14 @@ function getCategories(text: string): string[] {
     .map(([cat]) => cat);
 }
 
-function NewsCard({ article, summary, thumbnail, related, categories }: { article: any, summary: string, thumbnail: string | null, related: any[], categories: string[] }) {
+function NewsCard({ article, summary, thumbnail, related, categories, onSourceClick }: { 
+  article: Article, 
+  summary: string, 
+  thumbnail: string | null, 
+  related: Article[], 
+  categories: string[],
+  onSourceClick: (source: string) => void 
+}) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-md p-3 max-w-2xl mb-4 flex flex-col h-full">
       <div>
@@ -82,7 +89,12 @@ function NewsCard({ article, summary, thumbnail, related, categories }: { articl
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               {article.origin && (
-                <Badge color="info">{article.origin.title}</Badge>
+                <button
+                  onClick={() => onSourceClick(article.origin!.title)}
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  <Badge color="info">{article.origin.title}</Badge>
+                </button>
               )}
               <span className="text-xs text-gray-500 ml-auto">{formatDate(article.published * 1000)}</span>
             </div>
@@ -128,34 +140,58 @@ function NewsCard({ article, summary, thumbnail, related, categories }: { articl
   );
 }
 
+interface Article {
+  id: string;
+  title: string;
+  summary?: {
+    content: string;
+  };
+  published: number;
+  origin?: {
+    title: string;
+  };
+  alternate?: Array<{
+    href: string;
+  }>;
+}
+
 interface NewsFeedProps {
   initialCategory?: string;
 }
 
 function NewsFeedContent({ initialCategory }: NewsFeedProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get('category') || initialCategory;
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoriesMap, setCategoriesMap] = useState<Record<string, string[]>>({});
   const [categorizing, setCategorizing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [selectedSource, setSelectedSource] = useState<string>('all');
+  const [allSources, setAllSources] = useState<string[]>([]);
+  const [visibleCount, setVisibleCount] = useState(15); // Start with 15 articles
+  const loaderRef = useRef<HTMLDivElement | null>(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // Reset to page 1 if category or pageSize changes
+  // Reset to page 1 if category, source, or pageSize changes
   useEffect(() => {
-    setPage(1);
-  }, [category, pageSize]);
+    setVisibleCount(15);
+  }, [category, selectedSource]);
 
   useEffect(() => {
     fetch('/api/news')
       .then(res => res.json())
       .then(data => {
-        let items = (data.items || []).sort((a: any, b: any) => {
+        let items = (data.items || []).sort((a: Article, b: Article) => {
           return (b.published || 0) - (a.published || 0);
         });
         items = dedupeArticles(items);
         setArticles(items);
+        
+        // Extract unique sources
+        const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
+        setAllSources(uniqueSources);
+        
         setLoading(false);
       });
   }, []);
@@ -204,19 +240,56 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [articles]);
 
+  // Extract all possible sources from all loaded articles
+  useEffect(() => {
+    setAllSources(Array.from(new Set(articles.map((item: Article) => item.origin?.title).filter(Boolean))) as string[]);
+  }, [articles]);
+
+  // Filter articles by category and source
+  const filteredArticles = articles.filter(article => {
+    const matchesCategory = !category || (categoriesMap[article.id] || []).some(cat => cat.toLowerCase() === category);
+    const matchesSource = selectedSource === 'all' || article.origin?.title === selectedSource;
+    return matchesCategory && matchesSource;
+  });
+
+  // Infinite scroll: show only up to visibleCount
+  const visibleArticles = filteredArticles.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredArticles.length;
+
+  // Infinite scroll logic
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    const target = entries[0];
+    if (target.isIntersecting && hasMore && !isFetchingMore) {
+      setIsFetchingMore(true);
+      setTimeout(() => {
+        setVisibleCount((prev) => Math.min(prev + 15, filteredArticles.length));
+        setIsFetchingMore(false);
+      }, 400); // Simulate loading delay
+    }
+  }, [hasMore, isFetchingMore, filteredArticles.length]);
+
+  useEffect(() => {
+    const option = {
+      root: null,
+      rootMargin: '20px',
+      threshold: 1.0
+    };
+    const observer = new window.IntersectionObserver(handleObserver, option);
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => {
+      if (loaderRef.current) observer.unobserve(loaderRef.current);
+    };
+  }, [handleObserver]);
+
+  const handleSourceClick = (source: string) => {
+    setSelectedSource(source);
+    // Update URL to reflect the source filter
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('source', source);
+    router.push(`/?${params.toString()}`);
+  };
+
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
-
-  const filteredArticles = category
-    ? articles.filter(article => {
-        const categories = categoriesMap[article.id] || [];
-        return categories.some(cat => cat.toLowerCase() === category);
-      })
-    : articles;
-
-  // Pagination logic
-  const totalArticles = filteredArticles.length;
-  const totalPages = Math.ceil(totalArticles / pageSize);
-  const paginatedArticles = filteredArticles.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="max-w-6xl mx-auto mt-0">
@@ -243,47 +316,31 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
             </nav>
           )}
         </div>
-        {totalPages > 1 && (
-          <div className="flex-1 flex justify-center">
-            <button
-              onClick={() => setPage(page - 1)}
-              disabled={page === 1}
-              className={`px-3 py-1 rounded border ${page === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-            >
-              Previous
-            </button>
-            <span className="text-sm text-gray-700 mx-2">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(page + 1)}
-              disabled={page === totalPages}
-              className={`px-3 py-1 rounded border ${page === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-            >
-              Next
-            </button>
-          </div>
-        )}
-        <div className="flex-1 flex justify-end items-center">
-          <label htmlFor="pageSize" className="mr-2 text-sm text-gray-700">Articles per page:</label>
-          <select
-            id="pageSize"
-            value={pageSize}
-            onChange={e => setPageSize(Number(e.target.value))}
-            className="border rounded px-2 py-1 text-sm"
+        <div className="flex items-center gap-4">
+          <Select
+            value={selectedSource}
+            onChange={(e) => {
+              setSelectedSource(e.target.value);
+              // Update URL to reflect the source filter
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('source', e.target.value);
+              router.push(`/?${params.toString()}`);
+            }}
+            className="w-48"
           >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
+            <option value="all">All Sources</option>
+            {allSources.map(source => (
+              <option key={source} value={source}>{source}</option>
+            ))}
+          </Select>
         </div>
       </div>
+
       {/* Articles grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {paginatedArticles.map(article => {
-          const summaryHtml = article.summary?.content || '';
-          const thumbnail = extractThumbnail(summaryHtml);
-          const summary = stripHtmlAndTruncate(summaryHtml, 30);
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {visibleArticles.map(article => {
+          const summary = stripHtmlAndTruncate(article.summary?.content || '', 50);
+          const thumbnail = extractThumbnail(article.summary?.content || '');
           const related = relatedMap[article.id] || [];
           const categories = categoriesMap[article.id] || [];
           return (
@@ -294,67 +351,14 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
               thumbnail={thumbnail}
               related={related}
               categories={categories}
+              onSourceClick={handleSourceClick}
             />
           );
         })}
       </div>
-      {/* Bottom latest news row */}
-      <div className="flex items-center justify-between mt-6 w-full bg-gray-50">
-        <div className="flex-1 min-w-0">
-          {!category ? (
-            <nav className="text-sm" aria-label="Breadcrumb">
-              <ol className="list-reset flex text-gray-600">
-                <li className="font-bold text-gray-900">Latest News</li>
-              </ol>
-            </nav>
-          ) : (
-            <nav className="text-sm" aria-label="Breadcrumb">
-              <ol className="list-reset flex text-gray-600">
-                <li>
-                  <a href="/" className="hover:underline text-gray-800">Latest News</a>
-                </li>
-                <li>
-                  <span className="mx-2">/</span>
-                </li>
-                <li className="font-bold text-gray-900">{category.charAt(0).toUpperCase() + category.slice(1)}</li>
-              </ol>
-            </nav>
-          )}
-        </div>
-        {totalPages > 1 && (
-          <div className="flex-1 flex justify-center">
-            <button
-              onClick={() => setPage(page - 1)}
-              disabled={page === 1}
-              className={`px-3 py-1 rounded border ${page === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-            >
-              Previous
-            </button>
-            <span className="text-sm text-gray-700 mx-2">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(page + 1)}
-              disabled={page === totalPages}
-              className={`px-3 py-1 rounded border ${page === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-            >
-              Next
-            </button>
-          </div>
-        )}
-        <div className="flex-1 flex justify-end items-center">
-          <label htmlFor="pageSize-bottom" className="mr-2 text-sm text-gray-700">Articles per page:</label>
-          <select
-            id="pageSize-bottom"
-            value={pageSize}
-            onChange={e => setPageSize(Number(e.target.value))}
-            className="border rounded px-2 py-1 text-sm"
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
+      {/* Loader for infinite scroll */}
+      <div ref={loaderRef} className="flex justify-center items-center h-16">
+        {hasMore && <Spinner />}
       </div>
     </div>
   );
