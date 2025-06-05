@@ -1,5 +1,8 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
+
+# Install OpenSSL and other required dependencies
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
@@ -16,31 +19,29 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build application
+# Build the application
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine AS runner
+# Production image
+FROM node:20-alpine AS runner
+
+# Install OpenSSL and other required dependencies
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
 # Copy necessary files from builder
 COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
-
-# Create empty public directory
-RUN mkdir -p public
-
-# Install production dependencies only
-RUN npm install --production
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Expose port
+# Expose the port
 EXPOSE 3000
 
 # Start the application

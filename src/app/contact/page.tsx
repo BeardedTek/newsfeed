@@ -1,23 +1,72 @@
+'use client';
+
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+
+function ContactContent() {
+  const searchParams = useSearchParams();
+  const success = searchParams.get('success');
+  
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Contact Us</h1>
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          Your message has been sent successfully!
+        </div>
+      )}
+      <form className="max-w-lg">
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+            Message
+          </label>
+          <textarea
+            id="message"
+            name="message"
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+        >
+          Send Message
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function ContactPage() {
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-4">Contact</h1>
-      <p className="mb-4">We'd love to hear from you! Reach out to us using the information below:</p>
-      <ul className="list-none pl-0 mb-4">
-        <li className="mb-2">
-          <span className="font-semibold">Email:</span>{' '}
-          <a href="mailto:newsfeed@beardedtek.com" className="text-blue-600 hover:underline">newsfeed@beardedtek.com</a>
-        </li>
-        <li>
-          <span className="font-semibold">GitHub:</span>{' '}
-          <a href="https://github.com/beardedtek/newsfeed" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            github.com/beardedtek/newsfeed
-          </a>
-        </li>
-      </ul>
-      <p>
-        We welcome feedback, bug reports, and contributions!
-      </p>
-    </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <ContactContent />
+    </Suspense>
   );
 } 

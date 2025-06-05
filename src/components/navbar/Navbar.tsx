@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Navbar as FlowbiteNavbar, Button, Dropdown, Avatar } from 'flowbite-react';
 import { HiMenu, HiX } from 'react-icons/hi';
@@ -12,7 +12,7 @@ const CATEGORIES = [
   'Politics', 'US', 'World', 'Sports', 'Technology', 'Entertainment', 'Science', 'Health', 'Business'
 ];
 
-export default function Navbar() {
+function NavbarContent() {
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -85,5 +85,13 @@ export default function Navbar() {
         })}
       </FlowbiteNavbar.Collapse>
     </FlowbiteNavbar>
+  );
+}
+
+export default function Navbar() {
+  return (
+    <Suspense fallback={<div className="h-16 bg-white border-b border-gray-200" />}>
+      <NavbarContent />
+    </Suspense>
   );
 } 
