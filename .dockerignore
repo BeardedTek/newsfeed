@@ -1,0 +1,13 @@
+.git
+.gitignore
+.next
+node_modules
+npm-debug.log
+README.md
+.env
+.env.*
+.dockerignore
+Dockerfile
+docker-compose.yml
+postgres_data
+freshrss_data 
