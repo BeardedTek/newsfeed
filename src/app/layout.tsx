@@ -5,6 +5,7 @@ import { Flowbite } from "flowbite-react";
 import Providers from "@/components/providers/Providers";
 import Navbar from "@/components/navbar/Navbar";
 import { Footer } from "flowbite-react";
+import PlausibleScript from "@/components/PlausibleScript";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <PlausibleScript />
         <Providers>
           <Flowbite>
             <div className="min-h-screen bg-gray-50 flex flex-col">
