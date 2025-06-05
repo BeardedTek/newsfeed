@@ -1,21 +1,25 @@
 services:
   app:
+    image: beardedtek/newsfeed:latest
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/newsfeed?schema=public
-      - NEXTAUTH_URL=http://localhost:3000
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_URL=https://newsfeed.${BASE_DOMAIN}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - CASDOOR_ENDPOINT=${CASDOOR_ENDPOINT}
       - CASDOOR_CLIENT_ID=${CASDOOR_CLIENT_ID}
       - CASDOOR_CLIENT_SECRET=${CASDOOR_CLIENT_SECRET}
       - CASDOOR_CERTIFICATE=${CASDOOR_CERTIFICATE}
-      - FRESHRSS_URL=http://freshrss:8080
-      - FRESHRSS_API_KEY=${FRESHRSS_API_KEY}
+      - FRESHRSS_URL=${FRESHRSS_URL}
+      - FRESHRSS_API_USER=${FRESHRSS_API_USER}
+      - FRESHRSS_API_PASSWORD=${FRESHRSS_API_PASSWORD}
       - REDIS_URL=redis://redis:6379
+      - OLLAMA_URL=${OLLAMA_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
     depends_on:
       - db
       - casdoor
