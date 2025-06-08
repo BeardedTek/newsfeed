@@ -165,13 +165,14 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
   const category = searchParams.get('category') || initialCategory;
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categoriesMap, setCategoriesMap] = useState<Record<string, string[]>>({});
+  const [categories, setCategories] = useState<Record<string, string[]>>({});
   const [categorizing, setCategorizing] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>('all');
   const [allSources, setAllSources] = useState<string[]>([]);
   const [visibleCount, setVisibleCount] = useState(15); // Start with 15 articles
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [relatedStories, setRelatedStories] = useState<Record<string, Article[]>>({});
 
   // Reset to page 1 if category, source, or pageSize changes
   useEffect(() => {
@@ -214,7 +215,7 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
     let cancelled = false;
     async function categorizeAll() {
       setCategorizing(true);
-      const newMap: Record<string, string[]> = { ...categoriesMap };
+      const newMap: Record<string, string[]> = { ...categories };
       for (const article of articles) {
         if (newMap[article.id]) continue;
         const text = `${article.title} ${article.summary?.content || ''}`;
@@ -227,7 +228,7 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
           const data = await res.json();
           if (!cancelled) {
             newMap[article.id] = data.categories || [];
-            setCategoriesMap({ ...newMap });
+            setCategories(prev => ({ ...prev, ...newMap }));
           }
         } catch {
           // ignore errors
@@ -247,7 +248,7 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
 
   // Filter articles by category and source
   const filteredArticles = articles.filter(article => {
-    const matchesCategory = !category || (categoriesMap[article.id] || []).some(cat => cat.toLowerCase() === category);
+    const matchesCategory = !category || (categories[article.id] || []).some(cat => cat.toLowerCase() === category);
     const matchesSource = selectedSource === 'all' || article.origin?.title === selectedSource;
     return matchesCategory && matchesSource;
   });
@@ -288,6 +289,50 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
     params.set('source', source);
     router.push(`/?${params.toString()}`);
   };
+
+  // Fetch categories and related for visible articles only, no batching logic
+  useEffect(() => {
+    if (!loading) {
+      const visibleArticles = filteredArticles.slice(0, visibleCount);
+      // Only fetch for articles missing categories
+      const missingCategories = visibleArticles.filter(article => !categories[article.id]);
+      if (missingCategories.length > 0) {
+        fetch('/api/categories/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articles: missingCategories }),
+        })
+          .then(res => res.json())
+          .then(categoriesData => {
+            const newCategories: Record<string, string[]> = {};
+            categoriesData.results.forEach((result: { articleId: string; categories: string[] }) => {
+              if (result.categories.length > 0) newCategories[result.articleId] = result.categories;
+            });
+            setCategories(prev => ({ ...prev, ...newCategories }));
+          })
+          .catch(() => {}); // Non-blocking, ignore errors
+      }
+      // Only fetch for articles missing related
+      const missingRelated = visibleArticles.filter(article => !relatedStories[article.id]);
+      if (missingRelated.length > 0) {
+        fetch('/api/related/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articles: missingRelated }),
+        })
+          .then(res => res.json())
+          .then(relatedData => {
+            const newRelated: Record<string, Article[]> = {};
+            relatedData.results.forEach((result: { articleId: string; related: Article[] }) => {
+              if (result.related.length > 0) newRelated[result.articleId] = result.related;
+            });
+            setRelatedStories(prev => ({ ...prev, ...newRelated }));
+          })
+          .catch(() => {}); // Non-blocking, ignore errors
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, visibleCount, filteredArticles, categories, relatedStories]);
 
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
 
@@ -338,11 +383,11 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
 
       {/* Articles grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {visibleArticles.map(article => {
+        {filteredArticles.slice(0, visibleCount).map((article) => {
+          const articleCategories = categories[article.id] || [];
+          const related = relatedStories[article.id] || [];
           const summary = stripHtmlAndTruncate(article.summary?.content || '', 50);
           const thumbnail = extractThumbnail(article.summary?.content || '');
-          const related = relatedMap[article.id] || [];
-          const categories = categoriesMap[article.id] || [];
           return (
             <NewsCard
               key={article.id}
@@ -350,7 +395,7 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
               summary={summary}
               thumbnail={thumbnail}
               related={related}
-              categories={categories}
+              categories={articleCategories}
               onSourceClick={handleSourceClick}
             />
           );

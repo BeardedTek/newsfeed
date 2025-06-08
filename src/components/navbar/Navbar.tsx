@@ -83,6 +83,9 @@ function NavbarContent() {
             </FlowbiteNavbar.Link>
           );
         })}
+        <FlowbiteNavbar.Link href="/about">About</FlowbiteNavbar.Link>
+        <FlowbiteNavbar.Link href="/privacy">Privacy</FlowbiteNavbar.Link>
+        <FlowbiteNavbar.Link href="https://github.com/beardedtek/newsfeed" target="_blank" rel="noopener noreferrer">GitHub</FlowbiteNavbar.Link>
       </FlowbiteNavbar.Collapse>
     </FlowbiteNavbar>
   );
