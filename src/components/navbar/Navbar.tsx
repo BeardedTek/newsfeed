@@ -18,20 +18,10 @@ const GitHubLogo = () => (
   </svg>
 );
 
-function NavbarContent({ onSearch, allSources = [], selectedSource = 'all', onSourceChange }: {
-  onSearch?: (query: string) => void,
-  allSources?: string[],
-  selectedSource?: string,
-  onSourceChange?: (source: string) => void
-}) {
-  const { data: session, status } = useSession();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const searchParams = useSearchParams();
-  const selectedCategory = searchParams.get('category');
+function NavbarContent({ onSearch }: { onSearch?: (query: string) => void }) {
   const [showSearch, setShowSearch] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [showCategories, setShowCategories] = useState(false);
-  const [showSources, setShowSources] = useState(false);
 
   const handleSearch = () => {
     if (onSearch && searchValue.trim()) {
@@ -45,17 +35,9 @@ function NavbarContent({ onSearch, allSources = [], selectedSource = 'all', onSo
     }
   };
 
-  // Close categories dropdown on click outside
-  // (simple implementation for now)
   function handleBlurCategories(e: React.FocusEvent<HTMLDivElement>) {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setShowCategories(false);
-    }
-  }
-
-  function handleBlurSources(e: React.FocusEvent<HTMLDivElement>) {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setShowSources(false);
     }
   }
 
@@ -88,36 +70,6 @@ function NavbarContent({ onSearch, allSources = [], selectedSource = 'all', onSo
                   >
                     {category}
                   </Link>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="relative" tabIndex={0} onBlur={handleBlurSources}>
-            <button
-              className="flex items-center px-2 py-1 hover:underline text-black"
-              onClick={() => setShowSources(v => !v)}
-              aria-haspopup="true"
-              aria-expanded={showSources}
-              type="button"
-            >
-              Sources <HiChevronDown className="ml-1" />
-            </button>
-            {showSources && (
-              <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50 flex flex-col max-h-64 overflow-y-auto">
-                <button
-                  className={`px-4 py-2 text-left hover:bg-gray-100 ${selectedSource === 'all' ? 'font-bold' : ''}`}
-                  onClick={() => { onSourceChange && onSourceChange('all'); setShowSources(false); }}
-                >
-                  All Sources
-                </button>
-                {allSources.map(source => (
-                  <button
-                    key={source}
-                    className={`px-4 py-2 text-left hover:bg-gray-100 ${selectedSource === source ? 'font-bold' : ''}`}
-                    onClick={() => { onSourceChange && onSourceChange(source); setShowSources(false); }}
-                  >
-                    {source}
-                  </button>
                 ))}
               </div>
             )}
@@ -159,15 +111,10 @@ function NavbarContent({ onSearch, allSources = [], selectedSource = 'all', onSo
   );
 }
 
-export default function Navbar({ onSearch, allSources, selectedSource, onSourceChange }: {
-  onSearch?: (query: string) => void,
-  allSources?: string[],
-  selectedSource?: string,
-  onSourceChange?: (source: string) => void
-}) {
+export default function Navbar({ onSearch }: { onSearch?: (query: string) => void }) {
   return (
     <Suspense fallback={<div className="h-16 bg-white border-b border-gray-200" />}>
-      <NavbarContent onSearch={onSearch} allSources={allSources} selectedSource={selectedSource} onSourceChange={onSourceChange} />
+      <NavbarContent onSearch={onSearch} />
     </Suspense>
   );
 } 
