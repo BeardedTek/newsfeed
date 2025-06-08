@@ -158,9 +158,12 @@ interface Article {
 interface NewsFeedProps {
   initialCategory?: string;
   searchQuery?: string | null;
+  allSources?: string[];
+  selectedSource?: string;
+  onSourceChange?: (source: string) => void;
 }
 
-function NewsFeedContent({ initialCategory, searchQuery }: NewsFeedProps) {
+function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSources, selectedSource: parentSelectedSource, onSourceChange }: NewsFeedProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get('category') || initialCategory;
@@ -168,8 +171,8 @@ function NewsFeedContent({ initialCategory, searchQuery }: NewsFeedProps) {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Record<string, string[]>>({});
   const [categorizing, setCategorizing] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<string>('all');
-  const [allSources, setAllSources] = useState<string[]>([]);
+  const [selectedSource, setSelectedSource] = useState<string>(parentSelectedSource || 'all');
+  const [allSources, setAllSources] = useState<string[]>(parentSources || []);
   const [visibleCount, setVisibleCount] = useState(15); // Start with 15 articles
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -195,6 +198,7 @@ function NewsFeedContent({ initialCategory, searchQuery }: NewsFeedProps) {
           setArticles(items);
           const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
           setAllSources(uniqueSources);
+          if (onSourceChange) onSourceChange('all');
           setLoading(false);
         });
     } else {
@@ -208,11 +212,21 @@ function NewsFeedContent({ initialCategory, searchQuery }: NewsFeedProps) {
           setArticles(items);
           const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
           setAllSources(uniqueSources);
+          if (onSourceChange) onSourceChange('all');
           setLoading(false);
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (parentSources && parentSources.length !== allSources.length) {
+      setAllSources(parentSources);
+    }
+    if (parentSelectedSource && parentSelectedSource !== selectedSource) {
+      setSelectedSource(parentSelectedSource);
+    }
+  }, [parentSources, parentSelectedSource]);
 
   // Compute related articles for each article
   const relatedMap: Record<string, any[]> = {};
@@ -350,6 +364,11 @@ function NewsFeedContent({ initialCategory, searchQuery }: NewsFeedProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, visibleCount, filteredArticles, categories, relatedStories]);
+
+  // When source changes, notify parent
+  useEffect(() => {
+    if (onSourceChange) onSourceChange(selectedSource);
+  }, [selectedSource]);
 
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
 
