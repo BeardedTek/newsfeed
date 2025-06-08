@@ -157,9 +157,10 @@ interface Article {
 
 interface NewsFeedProps {
   initialCategory?: string;
+  searchQuery?: string | null;
 }
 
-function NewsFeedContent({ initialCategory }: NewsFeedProps) {
+function NewsFeedContent({ initialCategory, searchQuery }: NewsFeedProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get('category') || initialCategory;
@@ -180,22 +181,38 @@ function NewsFeedContent({ initialCategory }: NewsFeedProps) {
   }, [category, selectedSource]);
 
   useEffect(() => {
-    fetch('/api/news')
-      .then(res => res.json())
-      .then(data => {
-        let items = (data.items || []).sort((a: Article, b: Article) => {
-          return (b.published || 0) - (a.published || 0);
+    setLoading(true);
+    setVisibleCount(15);
+    setSelectedSource('all');
+    if (searchQuery && searchQuery.length > 0) {
+      fetch(`/api/news?q=${encodeURIComponent(searchQuery)}`)
+        .then(res => res.json())
+        .then(data => {
+          let items = (data.items || []).sort((a: Article, b: Article) => {
+            return (b.published || 0) - (a.published || 0);
+          });
+          items = dedupeArticles(items);
+          setArticles(items);
+          const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
+          setAllSources(uniqueSources);
+          setLoading(false);
         });
-        items = dedupeArticles(items);
-        setArticles(items);
-        
-        // Extract unique sources
-        const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
-        setAllSources(uniqueSources);
-        
-        setLoading(false);
-      });
-  }, []);
+    } else {
+      fetch('/api/news')
+        .then(res => res.json())
+        .then(data => {
+          let items = (data.items || []).sort((a: Article, b: Article) => {
+            return (b.published || 0) - (a.published || 0);
+          });
+          items = dedupeArticles(items);
+          setArticles(items);
+          const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
+          setAllSources(uniqueSources);
+          setLoading(false);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   // Compute related articles for each article
   const relatedMap: Record<string, any[]> = {};

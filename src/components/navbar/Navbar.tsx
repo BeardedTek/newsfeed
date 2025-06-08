@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Navbar as FlowbiteNavbar, Button, Dropdown, Avatar } from 'flowbite-react';
-import { HiMenu, HiX } from 'react-icons/hi';
+import { HiMenu, HiX, HiSearch } from 'react-icons/hi';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -12,89 +12,81 @@ const CATEGORIES = [
   'Politics', 'US', 'World', 'Sports', 'Technology', 'Entertainment', 'Science', 'Health', 'Business'
 ];
 
-function NavbarContent() {
+function NavbarContent({ onSearch }: { onSearch?: (query: string) => void }) {
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const searchParams = useSearchParams();
   const selectedCategory = searchParams.get('category');
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+
+  const handleSearch = () => {
+    if (onSearch && searchValue.trim()) {
+      onSearch(searchValue.trim());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
-    <FlowbiteNavbar fluid className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <FlowbiteNavbar.Brand href="/">
-        <img src="/logo.png" alt="NewsFeed Logo" className="h-12 w-auto" />
-      </FlowbiteNavbar.Brand>
-
-      <div className="flex md:order-2">
-        {status === 'loading' ? (
-          <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-        ) : session ? (
-          <Dropdown
-            arrowIcon={false}
-            inline
-            label={
-              <Avatar
-                alt="User settings"
-                img={session.user?.image || undefined}
-                rounded
-                size="sm"
-              />
-            }
-          >
-            <Dropdown.Header>
-              <span className="block text-sm">{session.user?.name}</span>
-              <span className="block truncate text-sm font-medium">
-                {session.user?.email}
-              </span>
-            </Dropdown.Header>
-            <Dropdown.Item as={Link} href="/profile">
-              Profile
-            </Dropdown.Item>
-            <Dropdown.Item as={Link} href="/preferences">
-              Preferences
-            </Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Item onClick={() => signOut()}>
-              Sign out
-            </Dropdown.Item>
-          </Dropdown>
-        ) : (
-          <a
-            href="#"
-            onClick={e => { e.preventDefault(); signIn('casdoor', { callbackUrl: '/' }); }}
-            className="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            Sign In
-          </a>
+    <>
+      <FlowbiteNavbar fluid className="bg-white border-b border-gray-200 sticky top-0 z-50 flex flex-col">
+        <div className="flex flex-row items-center justify-between w-full">
+          <FlowbiteNavbar.Brand href="/">
+            <img src="/logo.png" alt="NewsFeed Logo" className="h-12 w-auto" />
+          </FlowbiteNavbar.Brand>
+          <div className="flex flex-row items-center gap-4">
+            <FlowbiteNavbar.Link href="#" onClick={() => setShowSearch(v => !v)}>
+              <HiSearch className="inline-block mr-1" /> Search
+            </FlowbiteNavbar.Link>
+            <FlowbiteNavbar.Link href="/about">About</FlowbiteNavbar.Link>
+            <FlowbiteNavbar.Link href="/privacy">Privacy</FlowbiteNavbar.Link>
+            <FlowbiteNavbar.Link href="https://github.com/beardedtek/newsfeed" target="_blank" rel="noopener noreferrer">GitHub Repo</FlowbiteNavbar.Link>
+          </div>
+        </div>
+        {showSearch && (
+          <div className="w-full flex items-center bg-gray-50 border-t border-b border-gray-200 px-4 py-2">
+            <input
+              type="text"
+              className="flex-1 border border-gray-300 rounded-l px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search articles..."
+              value={searchValue}
+              onChange={e => setSearchValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r flex items-center"
+              onClick={handleSearch}
+              aria-label="Search"
+            >
+              <HiSearch className="w-5 h-5" />
+            </button>
+          </div>
         )}
-        <FlowbiteNavbar.Toggle className="ml-2" />
-      </div>
-
-      <FlowbiteNavbar.Collapse>
-        <FlowbiteNavbar.Link href="/" className={!selectedCategory ? 'font-bold text-black' : ''}>Latest News</FlowbiteNavbar.Link>
-        {CATEGORIES.map(category => {
-          const isActive = selectedCategory === category.toLowerCase();
-          return (
+        <FlowbiteNavbar.Collapse>
+          <FlowbiteNavbar.Link href="/" className="font-bold text-black">Latest News</FlowbiteNavbar.Link>
+          {CATEGORIES.map(category => (
             <FlowbiteNavbar.Link
               key={category}
               href={`/?category=${category.toLowerCase()}`}
-              className={isActive ? 'font-bold text-black' : ''}
             >
               {category}
             </FlowbiteNavbar.Link>
-          );
-        })}
-        <FlowbiteNavbar.Link href="/about">About</FlowbiteNavbar.Link>
-        <FlowbiteNavbar.Link href="/privacy">Privacy</FlowbiteNavbar.Link>
-        <FlowbiteNavbar.Link href="https://github.com/beardedtek/newsfeed" target="_blank" rel="noopener noreferrer">GitHub</FlowbiteNavbar.Link>
-      </FlowbiteNavbar.Collapse>
-    </FlowbiteNavbar>
+          ))}
+        </FlowbiteNavbar.Collapse>
+      </FlowbiteNavbar>
+    </>
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ onSearch }: { onSearch?: (query: string) => void }) {
   return (
     <Suspense fallback={<div className="h-16 bg-white border-b border-gray-200" />}>
-      <NavbarContent />
+      <NavbarContent onSearch={onSearch} />
     </Suspense>
   );
 } 

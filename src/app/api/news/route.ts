@@ -41,5 +41,18 @@ export async function GET(req: NextRequest) {
   }
 
   const data = await res.json();
+
+  // Search filter
+  const { searchParams } = new URL(req.url);
+  const q = searchParams.get('q');
+  if (q && data.items) {
+    const qLower = q.toLowerCase();
+    data.items = data.items.filter((item: any) =>
+      (item.title && item.title.toLowerCase().includes(qLower)) ||
+      (item.summary && item.summary.content && item.summary.content.toLowerCase().includes(qLower)) ||
+      (item.content && item.content.content && item.content.content.toLowerCase().includes(qLower))
+    );
+  }
+
   return NextResponse.json(data);
 } 
