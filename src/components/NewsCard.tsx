@@ -20,6 +20,8 @@ interface NewsCardProps {
   relatedStories: Article[];
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+
 export default function NewsCard({ article, categories, relatedStories }: NewsCardProps) {
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -30,11 +32,11 @@ export default function NewsCard({ article, categories, relatedStories }: NewsCa
     if (!thumbUrl) {
       async function fetchThumb() {
         setImageError(false);
-        const res = await fetch(`/api/thumb?articleId=${encodeURIComponent(article.id)}`);
+        const res = await fetch(`${API_BASE}/thumbnails/${encodeURIComponent(article.id)}`);
         if (!cancelled && res.ok) {
           const data = await res.json();
-          if (data.thumb) {
-            setThumbUrl(data.thumb);
+          if (data.thumbnail_url) {
+            setThumbUrl(data.thumbnail_url);
             return;
           }
         }

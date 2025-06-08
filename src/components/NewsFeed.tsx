@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense, useRef, useCallback } from 'react';
 import { Spinner, Badge, Select } from 'flowbite-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+
 function formatDate(timestamp: number) {
   const date = new Date(timestamp);
   return date.toLocaleString(undefined, {
@@ -189,10 +191,10 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
     setVisibleCount(15);
     setSelectedSource('all');
     if (searchQuery && searchQuery.length > 0) {
-      fetch(`/api/news?q=${encodeURIComponent(searchQuery)}`)
+      fetch(`${API_BASE}/articles?q=${encodeURIComponent(searchQuery)}`)
         .then(res => res.json())
         .then(data => {
-          let items = (data.items || []).sort((a: Article, b: Article) => {
+          let items = (data.articles || []).sort((a: Article, b: Article) => {
             return (b.published || 0) - (a.published || 0);
           });
           items = dedupeArticles(items);
@@ -203,10 +205,10 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
           setLoading(false);
         });
     } else {
-      fetch('/api/news')
+      fetch(`${API_BASE}/articles`)
         .then(res => res.json())
         .then(data => {
-          let items = (data.items || []).sort((a: Article, b: Article) => {
+          let items = (data.articles || []).sort((a: Article, b: Article) => {
             return (b.published || 0) - (a.published || 0);
           });
           items = dedupeArticles(items);
@@ -329,10 +331,10 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
       // Only fetch for articles missing categories
       const missingCategories = visibleArticles.filter(article => !categories[article.id]);
       if (missingCategories.length > 0) {
-        fetch('/api/categories/batch', {
+        fetch(`${API_BASE}/categories/batch`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ articles: missingCategories }),
+          body: JSON.stringify({ article_ids: missingCategories.map(a => a.id) }),
         })
           .then(res => res.json())
           .then(categoriesData => {
@@ -347,10 +349,10 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
       // Only fetch for articles missing related
       const missingRelated = visibleArticles.filter(article => !relatedStories[article.id]);
       if (missingRelated.length > 0) {
-        fetch('/api/related/batch', {
+        fetch(`${API_BASE}/related/batch`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ articles: missingRelated }),
+          body: JSON.stringify({ article_ids: missingRelated.map(a => a.id) }),
         })
           .then(res => res.json())
           .then(relatedData => {
