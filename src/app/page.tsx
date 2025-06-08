@@ -3,6 +3,7 @@
 import { Suspense, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import NewsFeed from '@/components/NewsFeed';
+import Navbar from '@/components/navbar/Navbar';
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -25,12 +26,19 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <Navbar
+        onSearch={handleSearch}
+        allSources={allSources}
+        selectedSource={selectedSource}
+        onSourceChange={handleSourceChange}
+      />
       <NewsFeed
         initialCategory={category || undefined}
         searchQuery={searchQuery}
         allSources={allSources}
         selectedSource={selectedSource}
         onSourceChange={handleSourceChange}
+        onSourcesUpdate={handleSourcesUpdate}
       />
     </main>
   );

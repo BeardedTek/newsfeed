@@ -161,9 +161,10 @@ interface NewsFeedProps {
   allSources?: string[];
   selectedSource?: string;
   onSourceChange?: (source: string) => void;
+  onSourcesUpdate?: (sources: string[]) => void;
 }
 
-function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSources, selectedSource: parentSelectedSource, onSourceChange }: NewsFeedProps) {
+function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSources, selectedSource: parentSelectedSource, onSourceChange, onSourcesUpdate }: NewsFeedProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get('category') || initialCategory;
@@ -369,6 +370,11 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
   useEffect(() => {
     if (onSourceChange) onSourceChange(selectedSource);
   }, [selectedSource]);
+
+  // Call onSourcesUpdate whenever allSources changes
+  useEffect(() => {
+    if (onSourcesUpdate) onSourcesUpdate(allSources);
+  }, [allSources]);
 
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
 
