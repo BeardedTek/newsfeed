@@ -6,18 +6,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - NEXTAUTH_URL=https://newsfeed.${BASE_DOMAIN}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - CASDOOR_ENDPOINT=${CASDOOR_ENDPOINT}
-      - CASDOOR_CLIENT_ID=${CASDOOR_CLIENT_ID}
-      - CASDOOR_CLIENT_SECRET=${CASDOOR_CLIENT_SECRET}
-      - CASDOOR_CERTIFICATE=${CASDOOR_CERTIFICATE}
-      - BASE_DOMAIN=${BASE_DOMAIN}
+    env_file:
+      - env/app
     depends_on:
       - db
       - casdoor
-      - freshrss
       - redis
       - backend
     networks:
@@ -26,61 +19,53 @@ services:
 
   backend:
     image: beardedtek/newsfeed-backend:latest
+    restart: always
     build:
       context: ./backend
-    command: bash -c "source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8001"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
     ports:
       - "8001:8001"
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - FRESHRSS_URL=${FRESHRSS_URL}
-      - FRESHRSS_API_USER=${FRESHRSS_API_USER}
-      - FRESHRSS_API_PASSWORD=${FRESHRSS_API_PASSWORD}
-      - OLLAMA_URL=${OLLAMA_URL}
-      - OLLAMA_MODEL=${OLLAMA_MODEL}
+    env_file:
+      - env/backend
     depends_on:
       - redis
     networks:
       - app-network
 
-  celeryworker:
-    build:
-      context: ./backend
-    command: bash -c "source venv/bin/activate && celery -A app.workers.tasks.celery_app worker --loglevel=info"
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - FRESHRSS_URL=${FRESHRSS_URL}
-      - FRESHRSS_API_USER=${FRESHRSS_API_USER}
-      - FRESHRSS_API_PASSWORD=${FRESHRSS_API_PASSWORD}
-      - OLLAMA_URL=${OLLAMA_URL}
-      - OLLAMA_MODEL=${OLLAMA_MODEL}
+  worker:
+    image: beardedtek/newsfeed-backend:latest
+    restart: always
+    command: ["celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "--concurrency=2"]
+    env_file:
+      - env/backend
     depends_on:
       - redis
       - backend
     networks:
       - app-network
 
+  beat:
+    image: beardedtek/newsfeed-backend:latest
+    restart: always
+    command: celery -A app.workers.tasks.celery_app beat --loglevel=info
+    env_file:
+      - env/backend
+    depends_on:
+      - redis
+      - worker
+      - backend
+    networks:
+      - app-network
+
   db:
     image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=newsfeed
+    restart: always
+    env_file:
+      - env/backend
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    networks:
-      - app-network
-
-  freshrss-db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=freshrss
-      - POSTGRES_PASSWORD=freshrss
-      - POSTGRES_DB=freshrss
-    volumes:
-      - freshrss_postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
 
@@ -101,42 +86,40 @@ services:
   casdoor-db:
     image: postgres:15-alpine
     restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=casdoor
+    env_file:
+      - env/casdoor
     volumes:
       - casdoor_postgres_data:/var/lib/postgresql/data
     networks:
       - casdoor-network
 
-  freshrss:
-    image: linuxserver/freshrss:latest
-    ports:
-      - "8080:80"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=UTC
-      - FRESHRSS_DB_TYPE=pgsql
-      - FRESHRSS_DB_HOST=freshrss-db
-      - FRESHRSS_DB_USER=freshrss
-      - FRESHRSS_DB_PASSWORD=freshrss
-      - FRESHRSS_DB_BASE=freshrss
-    volumes:
-      - freshrss_data:/config
-    depends_on:
-      - freshrss-db
-      - db
-    networks:
-      - app-network
-
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
+    restart: always
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
       - "6379:6379"
     networks:
       - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+      - casdoor-db
+    networks:
+      - app-network
+      - casdoor-network
+
 
 networks:
   app-network:
@@ -146,6 +129,5 @@ networks:
 
 volumes:
   postgres_data:
-  freshrss_data:
-  freshrss_postgres_data:
   casdoor_postgres_data:
+  pgadmin_data:

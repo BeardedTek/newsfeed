@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useState, Suspense, useRef, useCallback } from 'react';
+import { useEffect, useState, Suspense, useRef, useCallback, useMemo } from 'react';
 import { Spinner, Badge, Select } from 'flowbite-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+
+// Add these constants at the top of the file
+const BATCH_SIZE = 10; // Maximum number of articles to send in a batch
+const BATCH_DEBOUNCE_MS = 200; // Debounce delay in milliseconds
 
 function formatDate(timestamp: number) {
   const date = new Date(timestamp);
@@ -69,6 +73,14 @@ function getCategories(text: string): string[] {
     .map(([cat]) => cat);
 }
 
+function normalizeArticle(article: any): Article {
+  return {
+    ...article,
+    summary: typeof article.summary === 'string' ? { content: article.summary } : article.summary,
+    origin: typeof article.origin === 'string' ? { title: article.origin } : article.origin,
+  };
+}
+
 function NewsCard({ article, summary, thumbnail, related, categories, onSourceClick }: { 
   article: Article, 
   summary: string, 
@@ -78,7 +90,7 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
   onSourceClick: (source: string) => void 
 }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-md p-3 max-w-2xl mb-4 flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md p-3 max-w-2xl mb-4 flex flex-col h-full">
       <div>
         <div className="flex flex-row items-start gap-4">
           {thumbnail && (
@@ -95,28 +107,30 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
                   onClick={() => onSourceClick(article.origin!.title)}
                   className="hover:opacity-80 transition-opacity"
                 >
-                  <Badge color="info">{article.origin.title}</Badge>
+                  <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-1 rounded mr-2">
+                    {article.origin.title}
+                  </span>
                 </button>
               )}
-              <span className="text-xs text-gray-500 ml-auto">{formatDate(article.published * 1000)}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatDate(article.published * 1000)}</span>
             </div>
-            <a href={article.alternate?.[0]?.href || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
-              <h2 className="text-lg font-semibold mb-1">{article.title}</h2>
+            <a href={article.url || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              <h2 className="text-lg font-semibold mb-1 dark:text-white">{article.title}</h2>
             </a>
           </div>
         </div>
-        <p className="text-gray-700 text-sm mt-2">{summary}</p>
+        <p className="text-gray-700 dark:text-gray-300 text-sm mt-2">{summary}</p>
         {related.length > 0 && (
           <div className="mt-2">
-            <div className="text-xs font-semibold text-gray-500 mb-1">Related articles:</div>
+            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Related articles:</div>
             <div className="flex flex-col gap-1">
               {related.map((rel) => (
                 <a
                   key={rel.id}
-                  href={rel.alternate?.[0]?.href || '#'}
+                  href={rel.url || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-bold text-black hover:underline"
+                  className="text-xs font-bold text-black dark:text-gray-200 hover:underline"
                 >
                   {rel.origin?.title ? `${rel.origin.title}: ` : ''}{rel.title}
                 </a>
@@ -131,7 +145,7 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
             <a
               key={cat}
               href={`/?category=${cat.toLowerCase()}`}
-              className="px-2 py-0.5 rounded bg-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-300"
+              className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
             >
               {cat}
             </a>
@@ -152,9 +166,8 @@ interface Article {
   origin?: {
     title: string;
   };
-  alternate?: Array<{
-    href: string;
-  }>;
+  url?: string;
+  categories?: string[];
 }
 
 interface NewsFeedProps {
@@ -164,13 +177,18 @@ interface NewsFeedProps {
   selectedSource?: string;
   onSourceChange?: (source: string) => void;
   onSourcesUpdate?: (sources: string[]) => void;
+  initialArticles?: Article[];
 }
 
-function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSources, selectedSource: parentSelectedSource, onSourceChange, onSourcesUpdate }: NewsFeedProps) {
+const CATEGORIES = [
+  'Politics', 'US', 'World', 'Sports', 'Technology', 'Entertainment', 'Science', 'Health', 'Business'
+];
+
+function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSources, selectedSource: parentSelectedSource, onSourceChange, onSourcesUpdate, initialArticles }: NewsFeedProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const category = searchParams.get('category') || initialCategory;
-  const [articles, setArticles] = useState<Article[]>([]);
+  const category = searchParams?.get('category') || initialCategory;
+  const [articles, setArticles] = useState<Article[]>(initialArticles ? initialArticles.map(normalizeArticle) : []);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Record<string, string[]>>({});
   const [categorizing, setCategorizing] = useState(false);
@@ -197,7 +215,7 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
           let items = (data.articles || []).sort((a: Article, b: Article) => {
             return (b.published || 0) - (a.published || 0);
           });
-          items = dedupeArticles(items);
+          items = dedupeArticles(items).map(normalizeArticle);
           setArticles(items);
           const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
           setAllSources(uniqueSources);
@@ -211,7 +229,7 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
           let items = (data.articles || []).sort((a: Article, b: Article) => {
             return (b.published || 0) - (a.published || 0);
           });
-          items = dedupeArticles(items);
+          items = dedupeArticles(items).map(normalizeArticle);
           setArticles(items);
           const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
           setAllSources(uniqueSources);
@@ -231,48 +249,19 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
     }
   }, [parentSources, parentSelectedSource]);
 
-  // Compute related articles for each article
-  const relatedMap: Record<string, any[]> = {};
+  // Compute related articles for each article (move to useMemo)
   const SIMILARITY_THRESHOLD = 0.3;
   const MAX_RELATED = 3;
-  articles.forEach((article, idx) => {
-    const related = articles
-      .filter((other, jdx) => idx !== jdx && jaccardSimilarity(article.title, other.title) >= SIMILARITY_THRESHOLD)
-      .sort((a, b) => jaccardSimilarity(article.title, b.title) - jaccardSimilarity(article.title, a.title))
-      .slice(0, MAX_RELATED);
-    relatedMap[article.id] = related;
-  });
-
-  // Categorize articles using Ollama via /api/categorize
-  useEffect(() => {
-    if (articles.length === 0) return;
-    let cancelled = false;
-    async function categorizeAll() {
-      setCategorizing(true);
-      const newMap: Record<string, string[]> = { ...categories };
-      for (const article of articles) {
-        if (newMap[article.id]) continue;
-        const text = `${article.title} ${article.summary?.content || ''}`;
-        try {
-          const res = await fetch('/api/categorize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text }),
-          });
-          const data = await res.json();
-          if (!cancelled) {
-            newMap[article.id] = data.categories || [];
-            setCategories(prev => ({ ...prev, ...newMap }));
-          }
-        } catch {
-          // ignore errors
-        }
-      }
-      setCategorizing(false);
-    }
-    categorizeAll();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const relatedMap = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    articles.forEach((article, idx) => {
+      const related = articles
+        .filter((other, jdx) => idx !== jdx && jaccardSimilarity(article.title, other.title) >= SIMILARITY_THRESHOLD)
+        .sort((a, b) => jaccardSimilarity(article.title, b.title) - jaccardSimilarity(article.title, a.title))
+        .slice(0, MAX_RELATED);
+      map[article.id] = related;
+    });
+    return map;
   }, [articles]);
 
   // Extract all possible sources from all loaded articles
@@ -282,7 +271,8 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
 
   // Filter articles by category and source
   const filteredArticles = articles.filter(article => {
-    const matchesCategory = !category || (categories[article.id] || []).some(cat => cat.toLowerCase() === category);
+    const articleCats = categories[article.id] || getCategories(article.title + ' ' + (article.summary?.content || ''));
+    const matchesCategory = !category || articleCats.some(cat => cat.toLowerCase() === category);
     const matchesSource = selectedSource === 'all' || article.origin?.title === selectedSource;
     return matchesCategory && matchesSource;
   });
@@ -319,50 +309,90 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
   const handleSourceClick = (source: string) => {
     setSelectedSource(source);
     // Update URL to reflect the source filter
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || '');
     params.set('source', source);
     router.push(`/?${params.toString()}`);
   };
 
-  // Fetch categories and related for visible articles only, no batching logic
+  // Replace the useEffect for fetching categories and related with this updated version
   useEffect(() => {
     if (!loading) {
       const visibleArticles = filteredArticles.slice(0, visibleCount);
-      // Only fetch for articles missing categories
-      const missingCategories = visibleArticles.filter(article => !categories[article.id]);
-      if (missingCategories.length > 0) {
-        fetch(`${API_BASE}/categories/batch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ article_ids: missingCategories.map(a => a.id) }),
-        })
-          .then(res => res.json())
-          .then(categoriesData => {
-            const newCategories: Record<string, string[]> = {};
-            categoriesData.results.forEach((result: { articleId: string; categories: string[] }) => {
-              if (result.categories.length > 0) newCategories[result.articleId] = result.categories;
-            });
-            setCategories(prev => ({ ...prev, ...newCategories }));
-          })
-          .catch(() => {}); // Non-blocking, ignore errors
-      }
-      // Only fetch for articles missing related
+      // Only fetch for articles missing related or categories
       const missingRelated = visibleArticles.filter(article => !relatedStories[article.id]);
-      if (missingRelated.length > 0) {
-        fetch(`${API_BASE}/related/batch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ article_ids: missingRelated.map(a => a.id) }),
-        })
-          .then(res => res.json())
-          .then(relatedData => {
-            const newRelated: Record<string, Article[]> = {};
-            relatedData.results.forEach((result: { articleId: string; related: Article[] }) => {
-              if (result.related.length > 0) newRelated[result.articleId] = result.related;
-            });
-            setRelatedStories(prev => ({ ...prev, ...newRelated }));
+      const missingCategories = visibleArticles.filter(article => !categories[article.id]);
+      
+      // Test fetch for a single article's categories
+      if (missingCategories.length > 0) {
+        const testArticleId = missingCategories[0].id;
+        fetch(`${API_BASE}/categories/${testArticleId}`)
+          .then(res => {
+            return res.json();
           })
-          .catch(() => {}); // Non-blocking, ignore errors
+          .then(data => {
+          })
+          .catch(err => {
+          });
+      }
+
+      if (missingRelated.length > 0) {
+        const batch = missingRelated.slice(0, BATCH_SIZE);
+        const timeoutId = setTimeout(() => {
+          // Fetch related articles
+          fetch(`${API_BASE}/related/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(batch.map(a => Number(a.id))),
+          })
+            .then(res => res.json())
+            .then(relatedData => {
+              const newRelated: Record<string, Article[]> = {};
+              Object.entries(relatedData).forEach(([articleId, related]: [string, any]) => {
+                if (related && related.length > 0) {
+                  newRelated[articleId] = related.map((r: any) => ({
+                    id: r,
+                    title: articles.find(a => a.id === r)?.title || '',
+                    summary: articles.find(a => a.id === r)?.summary || { content: '' },
+                    published: articles.find(a => a.id === r)?.published || 0,
+                    origin: articles.find(a => a.id === r)?.origin || { title: '' },
+                    url: articles.find(a => a.id === r)?.url || '',
+                    categories: articles.find(a => a.id === r)?.categories || []
+                  }));
+                }
+              });
+              setRelatedStories(prev => ({ ...prev, ...newRelated }));
+            })
+            .catch(err => {
+            });
+        }, BATCH_DEBOUNCE_MS);
+        return () => clearTimeout(timeoutId);
+      }
+
+      if (missingCategories.length > 0) {
+        const batch = missingCategories.slice(0, BATCH_SIZE);
+        const timeoutId = setTimeout(() => {
+          // Fetch categories
+          fetch(`${API_BASE}/categories/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(batch.map(a => Number(a.id))),
+          })
+            .then(res => {
+              return res.json();
+            })
+            .then(categoryData => {
+              const newCategories: Record<string, string[]> = {};
+              Object.entries(categoryData).forEach(([articleId, data]: [string, any]) => {
+                if (data && data.categories && data.categories.length > 0) {
+                  newCategories[articleId] = data.categories;
+                }
+              });
+              setCategories(prev => ({ ...prev, ...newCategories }));
+            })
+            .catch(err => {
+            });
+        }, BATCH_DEBOUNCE_MS);
+        return () => clearTimeout(timeoutId);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -381,45 +411,66 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto mt-0">
+    <div className="dark:bg-gray-900 max-w-6xl mx-auto mt-0">
       {/* Top latest news row */}
-      <div className="flex items-center justify-between mb-6 w-full sticky top-16 z-40 bg-gray-50">
+      <div className="flex items-center justify-between mb-6 w-full sticky top-16 z-40 bg-gray-50 dark:bg-gray-900">
         <div className="flex-1 min-w-0">
           {!category ? (
             <nav className="text-sm" aria-label="Breadcrumb">
-              <ol className="list-reset flex text-gray-600">
-                <li className="font-bold text-gray-900">Latest News</li>
+              <ol className="list-reset flex text-gray-600 dark:text-gray-300">
+                <li className="font-bold text-gray-900 dark:text-white">Latest News</li>
               </ol>
             </nav>
           ) : (
             <nav className="text-sm" aria-label="Breadcrumb">
-              <ol className="list-reset flex text-gray-600">
+              <ol className="list-reset flex text-gray-600 dark:text-gray-300">
                 <li>
-                  <a href="/" className="hover:underline text-gray-800">Latest News</a>
+                  <a href="/" className="hover:underline text-gray-800 dark:text-gray-200">Latest News</a>
                 </li>
                 <li>
                   <span className="mx-2">/</span>
                 </li>
-                <li className="font-bold text-gray-900">{category.charAt(0).toUpperCase() + category.slice(1)}</li>
+                <li className="font-bold text-gray-900 dark:text-white">{category.charAt(0).toUpperCase() + category.slice(1)}</li>
               </ol>
             </nav>
           )}
         </div>
         <div className="flex items-center gap-4">
+          {/* Sources select */}
           <Select
             value={selectedSource}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
               setSelectedSource(e.target.value);
               // Update URL to reflect the source filter
-              const params = new URLSearchParams(searchParams.toString());
+              const params = new URLSearchParams(searchParams?.toString() || '');
               params.set('source', e.target.value);
               router.push(`/?${params.toString()}`);
             }}
-            className="w-48"
+            className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
           >
-            <option value="all">All Sources</option>
+            <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
             {allSources.map(source => (
-              <option key={source} value={source}>{source}</option>
+              <option key={source} value={source} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source}</option>
+            ))}
+          </Select>
+          {/* Categories select */}
+          <Select
+            value={category || ''}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              // Update URL to reflect the category filter
+              const params = new URLSearchParams(searchParams?.toString() || '');
+              if (e.target.value) {
+                params.set('category', e.target.value);
+              } else {
+                params.delete('category');
+              }
+              router.push(`/?${params.toString()}`);
+            }}
+            className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+          >
+            <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
             ))}
           </Select>
         </div>
@@ -428,8 +479,8 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
       {/* Articles grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredArticles.slice(0, visibleCount).map((article) => {
-          const articleCategories = categories[article.id] || [];
-          const related = relatedStories[article.id] || [];
+          const articleCategories = article.categories || [];
+          const related = relatedMap[article.id] || [];
           const summary = stripHtmlAndTruncate(article.summary?.content || '', 50);
           const thumbnail = extractThumbnail(article.summary?.content || '');
           return (

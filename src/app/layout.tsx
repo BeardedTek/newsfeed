@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Flowbite } from "flowbite-react";
-import Providers from "@/components/providers/Providers";
 import Navbar from "@/components/navbar/Navbar";
 import { Footer } from "flowbite-react";
 import PlausibleScript from "@/components/PlausibleScript";
@@ -20,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="light">
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -31,18 +30,16 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#2b5797" />
         <meta name="theme-color" content="#ffffff" />
       </head>
-      <body className={inter.className}>
+      <body className={inter.className + " bg-gray-50 dark:bg-gray-900"}>
         <PlausibleScript />
-        <Providers>
-          <Flowbite>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-              <Navbar />
-              <main className="container mx-auto px-4 py-4 flex-1">
-                {children}
-              </main>
-            </div>
-          </Flowbite>
-        </Providers>
+        <Flowbite>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+            <Navbar />
+            <main className="container mx-auto px-4 py-4 flex-1 dark:text-white">
+              {children}
+            </main>
+          </div>
+        </Flowbite>
       </body>
     </html>
   );

@@ -1,0 +1,13 @@
+# Backend and worker configuration
+REDIS_URL=redis://redis:6379/0
+FRESHRSS_URL=https://freshrss.beardedtek.net
+FRESHRSS_API_USER=newsfeed
+FRESHRSS_API_PASSWORD=newsfeed
+OLLAMA_URL=http://192.168.3.31:11434
+OLLAMA_MODEL=LLAMA3.2:3B
+
+# Database configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=newsfeed
+POSTGRES_HOST=db

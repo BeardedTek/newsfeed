@@ -1,0 +1,12 @@
+# App configuration
+APP_URL=http://localhost:3000/
+APP_SECRET=asdfkle899839asdjlfiasdf08934
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=asdfkle899839asdjlfiasdf08934
+CASDOOR_CLIENT_ID=b6c1eba090928a045ade
+CASDOOR_CLIENT_SECRET=854d96caf2473c2edf6a2a53ec1025a67386879c
+CASDOOR_CERTIFICATE=cert-built-in
+CASDOOR_ENDPOINT=http://localhost:8000
+
+# Base domain
+BASE_DOMAIN=localhost

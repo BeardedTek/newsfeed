@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation';
 
 function PrivacyContent() {
   const searchParams = useSearchParams();
-  const section = searchParams.get('section');
+  const section = searchParams?.get('section');
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Privacy Policy</h1>
-      <div className="prose max-w-none">
+      <h1 className="text-2xl font-bold mb-6 dark:text-white">Privacy Policy</h1>
+      <div className="prose max-w-none dark:text-gray-200">
         <p>Last updated: {new Date().toLocaleDateString()}</p>
         
         <h2 className="text-xl font-semibold mt-6 mb-4">1. Information We Collect</h2>
@@ -36,7 +36,7 @@ function PrivacyContent() {
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-4">4. Data Security</h2>
-        <p>We implement appropriate security measures to protect your personal information. However, no method of transmission over the Internet is 100% secure.</p>
+        <p>We implement appropriate security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction.</p>
 
         <h2 className="text-xl font-semibold mt-6 mb-4">5. Your Rights</h2>
         <p>You have the right to:</p>

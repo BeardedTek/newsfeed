@@ -6,7 +6,7 @@ import NewsFeed from '@/components/NewsFeed';
 
 function HomeContent() {
   const searchParams = useSearchParams();
-  const category = searchParams.get('category');
+  const category = searchParams?.get('category');
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
 
   const handleSearch = useCallback((query: string) => {
@@ -14,7 +14,7 @@ function HomeContent() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <NewsFeed
         initialCategory={category || undefined}
         searchQuery={searchQuery}
