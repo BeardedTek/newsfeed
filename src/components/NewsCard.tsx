@@ -1,105 +1,99 @@
 import React, { useState, useEffect } from 'react';
-import { Badge } from 'flowbite-react';
-
-interface Article {
-  id: string;
-  title: string;
-  description: string;
-  link: string;
-  published: number;
-  image?: string;
-  categories?: { name: string }[];
-  origin?: {
-    title: string;
-  };
-}
+import { Article } from '../types/article';
 
 interface NewsCardProps {
   article: Article;
+  summary: string;
+  thumbnail: string | null;
+  related: Article[];
   categories: string[];
-  relatedStories: Article[];
+  onSourceClick: (source: string) => void;
 }
 
-export default function NewsCard({ article, categories, relatedStories }: NewsCardProps) {
+const NewsCard: React.FC<NewsCardProps> = ({ article, summary, thumbnail, related, categories, onSourceClick }) => {
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    // Only fetch if we don't already have a thumbnail
-    if (!thumbUrl) {
-      async function fetchThumb() {
-        setImageError(false);
-        const res = await fetch(`/api/thumb?articleId=${encodeURIComponent(article.id)}`);
-        if (!cancelled && res.ok) {
-          const data = await res.json();
-          if (data.thumb) {
-            setThumbUrl(data.thumb);
-            return;
-          }
+    const fetchThumbnail = async () => {
+      try {
+        const response = await fetch(`/api/thumbnails/${article.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setThumbUrl(data.thumbnail_url);
         }
-        // Fallback to article.image
-        setThumbUrl(article.image || null);
+      } catch (error) {
+        console.error('Error fetching thumbnail:', error);
       }
-      fetchThumb();
+    };
+    if (!imageError) {
+      fetchThumbnail();
     }
-    return () => { cancelled = true; };
-    // Only re-run if article.id changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [article.id]);
+  }, [article.id, imageError]);
+
+  const handleImageError = () => {
+    setImageError(true);
+    setThumbUrl(null);
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-full">
-      {thumbUrl && !imageError ? (
-        <img
-          src={thumbUrl}
-          alt={article.title}
-          className="w-full h-48 object-cover"
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-          <span className="text-gray-400">No image available</span>
-        </div>
-      )}
-      <div className="p-4 flex flex-col flex-1">
-        <h2 className="text-lg font-semibold mb-2 line-clamp-2">{article.title}</h2>
-        <p className="text-gray-600 mb-4 line-clamp-3">{article.description}</p>
-        <div className="flex flex-wrap gap-2 mb-2">
-          {categories.map((category) => (
-            <Badge key={category} color="info">
-              {category}
-            </Badge>
-          ))}
-        </div>
-        {relatedStories.length > 0 && (
-          <div className="mt-2">
-            <h3 className="text-sm font-semibold mb-1">Related Stories</h3>
-            <ul className="space-y-1">
-              {relatedStories.map((related) => (
-                <li key={related.id} className="text-xs">
-                  <a href={related.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {related.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <div className="mt-auto flex justify-between items-center pt-2">
-          <span className="text-xs text-gray-500">
-            {new Date(article.published * 1000).toLocaleDateString()}
-          </span>
-          <a
-            href={article.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline text-xs"
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md p-3 max-w-2xl mb-4 flex flex-col h-full">
+      {/* Top row: Source (left), Date (right) */}
+      <div className="flex items-center gap-2 mb-2">
+        {article.origin && (
+          <button
+            onClick={() => onSourceClick(article.origin!.title)}
+            className="hover:opacity-80 transition-opacity"
           >
-            Read more
-          </a>
+            <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-1 rounded mr-2">
+              {article.origin.title}
+            </span>
+          </button>
+        )}
+        <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+          {new Date(article.published * 1000).toLocaleString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          })}
+        </span>
+      </div>
+      {/* Second row: Image and Headline */}
+      <div className="flex flex-row items-center gap-4 mb-2">
+        <div className="w-20 h-20 flex-shrink-0 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          {thumbUrl ? (
+            <img
+              src={thumbUrl}
+              alt={article.title}
+              className="w-full h-full object-cover"
+              onError={handleImageError}
+            />
+          ) : (
+            <span className="text-xs text-gray-400 dark:text-gray-500">No image</span>
+          )}
         </div>
+        <a
+          href={article.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline flex-1 min-w-0"
+        >
+          <h2 className="text-lg font-semibold dark:text-white mb-1 line-clamp-2">{article.title}</h2>
+        </a>
+      </div>
+      {/* Third row: Summary */}
+      <p className="text-gray-700 dark:text-gray-300 text-sm mb-2 line-clamp-4">{summary}</p>
+      {/* Fourth row: Categories */}
+      <div className="flex flex-row flex-wrap gap-2 mt-auto">
+        {categories && categories.length > 0 && categories.map((category: string) => (
+          <span
+            key={category}
+            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium px-2 py-1 rounded-full mb-1"
+          >
+            {category}
+          </span>
+        ))}
       </div>
     </div>
   );
-} 
+};
+
+export default NewsCard; 

@@ -1,60 +1,101 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 function AboutContent() {
   const searchParams = useSearchParams();
-  const section = searchParams.get('section');
+  const section = searchParams?.get('section') || 'overview';
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">About NewsFeed</h1>
+      <h1 className="text-3xl font-bold mb-6">About NewsFeed</h1>
+      
+      <div className="flex space-x-4 mb-6">
+        <a
+          href="?section=overview"
+          className={`px-4 py-2 rounded ${
+            section === 'overview' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-gray-200'
+          }`}
+        >
+          Overview
+        </a>
+        <a
+          href="?section=features"
+          className={`px-4 py-2 rounded ${
+            section === 'features' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-gray-200'
+          }`}
+        >
+          Features
+        </a>
+        <a
+          href="?section=technology"
+          className={`px-4 py-2 rounded ${
+            section === 'technology' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-gray-200'
+          }`}
+        >
+          Technology
+        </a>
+      </div>
+
       <div className="prose max-w-none">
+        {section === 'overview' && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Overview</h2>
         <p className="mb-4">
-          NewsFeed is a modern news aggregation platform that brings together the latest stories from various sources,
-          providing a personalized reading experience for each user.
-        </p>
+              NewsFeed is a modern news aggregator that brings together content from various sources,
+              providing a personalized and efficient way to stay informed. Our platform uses advanced
+              AI to categorize articles and find related content, making it easier to discover
+              relevant news and stories.
+            </p>
+            <p>
+              Whether you're looking for the latest headlines, specific topics, or related articles,
+              NewsFeed helps you navigate through the vast amount of information available online.
+            </p>
+          </div>
+        )}
 
-        <h2 className="text-xl font-semibold mt-6 mb-4">Our Mission</h2>
-        <p className="mb-4">
-          We aim to make staying informed easier and more enjoyable by:
-        </p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Aggregating high-quality news from trusted sources</li>
-          <li>Providing personalized content based on user preferences</li>
-          <li>Offering a clean, distraction-free reading experience</li>
-          <li>Making news accessible and easy to navigate</li>
+        {section === 'features' && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Features</h2>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>AI-powered article categorization</li>
+              <li>Related article suggestions</li>
+              <li>Source filtering and management</li>
+              <li>Responsive design for all devices</li>
+              <li>Real-time updates from multiple sources</li>
+              <li>Customizable reading experience</li>
         </ul>
+          </div>
+        )}
 
-        <h2 className="text-xl font-semibold mt-6 mb-4">Features</h2>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Personalized news feed based on your interests</li>
-          <li>Category-based filtering and organization</li>
-          <li>Related articles suggestions</li>
-          <li>Customizable reading preferences</li>
-          <li>Mobile-responsive design</li>
+        {section === 'technology' && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Technology Stack</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Frontend</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Next.js 14</li>
+                  <li>React</li>
+                  <li>TypeScript</li>
+                  <li>Material-UI</li>
+                  <li>Tailwind CSS</li>
         </ul>
-
-        <h2 className="text-xl font-semibold mt-6 mb-4">Technology</h2>
-        <p className="mb-4">
-          Built with modern web technologies:
-        </p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Next.js for the frontend and API routes</li>
-          <li>Prisma for database management</li>
-          <li>FreshRSS for news aggregation</li>
-          <li>Redis for caching and performance</li>
-          <li>Tailwind CSS for styling</li>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Backend</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>FastAPI</li>
+                  <li>Python</li>
+                  <li>Celery</li>
+                  <li>FreshRSS API</li>
         </ul>
-
-        <h2 className="text-xl font-semibold mt-6 mb-4">Contact</h2>
-        <p>
-          Have questions or suggestions? We'd love to hear from you! Reach out to us at{' '}
-          <a href="mailto:contact@beardedtek.com" className="text-blue-600 hover:underline">
-            contact@beardedtek.com
-          </a>
-        </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

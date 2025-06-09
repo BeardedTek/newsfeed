@@ -1,163 +1,108 @@
 # NewsFeed
 
-A modern news aggregation platform built with Next.js, FreshRSS, and Redis.
+A modern news aggregation platform built with Next.js, FastAPI, and Docker.
 
 ## Features
 
-- Real-time news aggregation from multiple sources
-- Category-based filtering
-- Source-based filtering
+- Real-time news aggregation
 - User authentication with Casdoor
-- User preferences and profiles
-- Responsive design with Flowbite UI
-- Redis caching for improved performance
+- Categorization and related articles
+- Responsive design
+- Docker-based deployment
 
 ## Prerequisites
 
-- Node.js 20 or later
 - Docker and Docker Compose
-- Redis server
-- FreshRSS instance with API access
-- Casdoor instance for authentication
+- Git
 
-## Environment Variables
+## Setup
 
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/newsfeed"
-
-# Redis
-REDIS_URL="redis://localhost:6379"
-
-# FreshRSS
-FRESHRSS_URL="https://your-freshrss-instance.com"
-FRESHRSS_API_USER="your-api-user"
-FRESHRSS_API_PASSWORD="your-api-password"
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-nextauth-secret"
-
-# Casdoor
-CASDOOR_URL="https://your-casdoor-instance.com"
-CASDOOR_CLIENT_ID="your-client-id"
-CASDOOR_CLIENT_SECRET="your-client-secret"
-CASDOOR_CERTIFICATE="your-certificate"
-```
-
-## Development Setup
-
-1. Install dependencies:
+1. Clone the repository:
    ```bash
-   npm install
+   git clone https://github.com/yourusername/newsfeed.git
+   cd newsfeed
    ```
 
-2. Set up the database:
+2. Create an environment file:
+   - Copy the example environment file:
    ```bash
-   npx prisma generate
-   npx prisma db push
+     cp env.example env
    ```
+   - Edit the `env` file and fill in the required environment variables:
+     ```
+     # App
+     APP_URL=https://newsfeed.${BASE_DOMAIN}
+     APP_SECRET=your-app-secret
 
-3. Start the development server:
+     # Casdoor
+     CASDOOR_ENDPOINT=https://casdoor.example.com
+     CASDOOR_CLIENT_ID=your-casdoor-client-id
+     CASDOOR_CLIENT_SECRET=your-casdoor-client-secret
+     CASDOOR_CERTIFICATE=your-casdoor-certificate
+
+     # Backend
+     REDIS_URL=redis://redis:6379/0
+     FRESHRSS_URL=your-freshrss-url
+     FRESHRSS_API_USER=your-freshrss-api-user
+     FRESHRSS_API_PASSWORD=your-freshrss-api-password
+     OLLAMA_URL=your-ollama-url
+     OLLAMA_MODEL=your-ollama-model
+
+     # Database
+     POSTGRES_USER=postgres
+     POSTGRES_PASSWORD=postgres
+     POSTGRES_DB=newsfeed
+
+     # freshrss-db
+     FRESHRSS_DB_TYPE=pgsql
+     FRESHRSS_DB_HOST=freshrss-db
+     FRESHRSS_DB_USER=freshrss
+     FRESHRSS_DB_PASSWORD=freshrss
+     FRESHRSS_DB_BASE=freshrss
+
+     # casdoor-db
+     POSTGRES_USER=postgres
+     POSTGRES_PASSWORD=postgres
+     POSTGRES_DB=casdoor
+
+     # freshrss
+     PUID=1000
+     PGID=1000
+     TZ=UTC
+
+     # BASE_DOMAIN
+     BASE_DOMAIN=your-base-domain
+     ```
+
+3. Build and start the services:
    ```bash
-   npm run dev
+   docker-compose up --build
    ```
 
-The application will be available at `http://localhost:3000`.
+4. Access the application:
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8001
+   - Casdoor: http://localhost:8000
+   - FreshRSS: http://localhost:8080
 
-## Docker Deployment
+## Development
 
-1. Build the Docker image:
+- To run the frontend in development mode:
+  ```bash
+  cd frontend
+  npm install
+  npm run dev
+  ```
+
+- To run the backend in development mode:
    ```bash
-   docker build -t newsfeed .
-   ```
-
-2. Run the container:
-   ```bash
-   docker run -p 3000:3000 \
-     -e DATABASE_URL="postgresql://user:password@host:5432/newsfeed" \
-     -e REDIS_URL="redis://host:6379" \
-     -e FRESHRSS_URL="https://your-freshrss-instance.com" \
-     -e FRESHRSS_API_USER="your-api-user" \
-     -e FRESHRSS_API_PASSWORD="your-api-password" \
-     -e NEXTAUTH_URL="http://localhost:3000" \
-     -e NEXTAUTH_SECRET="your-nextauth-secret" \
-     -e CASDOOR_URL="https://your-casdoor-instance.com" \
-     -e CASDOOR_CLIENT_ID="your-client-id" \
-     -e CASDOOR_CLIENT_SECRET="your-client-secret" \
-     -e CASDOOR_CERTIFICATE="your-certificate" \
-     newsfeed
-   ```
-
-## Docker Compose Setup
-
-1. Create a `docker-compose.yml` file:
-   ```yaml
-   version: '3.8'
-   services:
-     app:
-       build: .
-       ports:
-         - "3000:3000"
-       environment:
-         - DATABASE_URL=postgresql://user:password@db:5432/newsfeed
-         - REDIS_URL=redis://redis:6379
-         - FRESHRSS_URL=https://your-freshrss-instance.com
-         - FRESHRSS_API_USER=your-api-user
-         - FRESHRSS_API_PASSWORD=your-api-password
-         - NEXTAUTH_URL=http://localhost:3000
-         - NEXTAUTH_SECRET=your-nextauth-secret
-         - CASDOOR_URL=https://your-casdoor-instance.com
-         - CASDOOR_CLIENT_ID=your-client-id
-         - CASDOOR_CLIENT_SECRET=your-client-secret
-         - CASDOOR_CERTIFICATE=your-certificate
-       depends_on:
-         - db
-         - redis
-
-     db:
-       image: postgres:15
-       environment:
-         - POSTGRES_USER=user
-         - POSTGRES_PASSWORD=password
-         - POSTGRES_DB=newsfeed
-       volumes:
-         - postgres_data:/var/lib/postgresql/data
-
-     redis:
-       image: redis:7
-       volumes:
-         - redis_data:/data
-
-   volumes:
-     postgres_data:
-     redis_data:
-   ```
-
-2. Start the services:
-   ```bash
-   docker-compose up -d
-   ```
-
-## API Endpoints
-
-- `GET /api/news` - Get latest news articles
-- `POST /api/categorize` - Categorize article text
-- `GET /api/preferences` - Get user preferences
-- `POST /api/preferences` - Update user preferences
-- `GET /api/profile` - Get user profile
-- `POST /api/profile` - Update user profile
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+  cd backend
+  python -m venv venv
+  source venv/bin/activate  # On Windows: venv\Scripts\activate
+  pip install -r requirements.txt
+  uvicorn app.main:app --reload
+  ```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License. 
