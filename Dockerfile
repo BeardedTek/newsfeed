@@ -1,52 +1,36 @@
-# Build stage
+# ---- Build Stage ----
 FROM node:20-alpine AS builder
 
-# Install OpenSSL and other required dependencies
-RUN apk add --no-cache openssl
-
 WORKDIR /app
 
-# Copy package files
+# Install dependencies (only production, no devDependencies)
 COPY package*.json ./
-COPY prisma ./prisma/
+COPY tsconfig.json ./
+RUN npm ci --omit=dev
 
-# Install dependencies
-RUN npm install
-
-# Copy source code
+# Copy all source code and config files
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build the application
+# Build the Next.js app (standalone output)
 RUN npm run build
 
-# Production image
+# ---- Production Stage ----
 FROM node:20-alpine AS runner
-
-# Install OpenSSL and other required dependencies
-RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy necessary files from builder
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/public ./public
+# Copy Next.js standalone output
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/public ./public
 
-# Generate Prisma client in runner
-RUN npx prisma generate
+# Copy tsconfig.json for runtime path resolution (if needed)
+COPY --from=builder /app/tsconfig.json ./
 
-# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Expose the port
 EXPOSE 3000
 
-# Start the application
 CMD ["node", "server.js"] 

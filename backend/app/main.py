@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import articles, categories, related, thumbnails, sources
 from app.init_db import init_db
@@ -19,13 +19,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(articles.router, prefix="/articles", tags=["articles"])
-app.include_router(categories.router, prefix="/categories", tags=["categories"])
-app.include_router(related.router, prefix="/related", tags=["related"])
-app.include_router(thumbnails.router, prefix="/thumbnails", tags=["thumbnails"])
-app.include_router(sources.router, prefix="/sources", tags=["sources"])
+# Create a main API router with prefix /api
+api_router = APIRouter(prefix="/api")
+api_router.include_router(articles.router, prefix="/articles", tags=["articles"])
+api_router.include_router(categories.router, prefix="/categories", tags=["categories"])
+api_router.include_router(related.router, prefix="/related", tags=["related"])
+api_router.include_router(thumbnails.router, prefix="/thumbnails", tags=["thumbnails"])
+api_router.include_router(sources.router, prefix="/sources", tags=["sources"])
 
-@app.get("/")
+@api_router.get("/")
 async def root():
-    return {"status": "ok"} 
+    return {"status": "ok"}
+
+app.include_router(api_router) 

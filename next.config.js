@@ -1,13 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    serverActions: true,
-  },
-  // Set the hostname to 0.0.0.0 to accept connections from all interfaces
-  server: {
-    hostname: '0.0.0.0',
-    port: 3000,
+  webpack: (config, { isServer }) => {
+    // Add path resolution
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, 'src'),
+    }
+    return config
   },
 }
 

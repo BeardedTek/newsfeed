@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Flowbite } from "flowbite-react";
-import Navbar from "@/components/navbar/Navbar";
-import { Footer } from "flowbite-react";
+import Navbar from '@/components/navbar/Navbar';
 import PlausibleScript from "@/components/PlausibleScript";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,6 +20,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="light">
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="description" content="News Feed Application" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -29,6 +32,8 @@ export default function RootLayout({
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
         <meta name="msapplication-TileColor" content="#2b5797" />
         <meta name="theme-color" content="#ffffff" />
+        <script defer data-domain="newsfeed.beardedtek.net" src="https://plausible.beardedtek.org/js/script.file-downloads.hash.outbound-links.js"></script>
+        <script>{`window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }`}</script>
       </head>
       <body className={inter.className + " bg-gray-50 dark:bg-gray-900"}>
         <PlausibleScript />

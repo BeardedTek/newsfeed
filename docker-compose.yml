@@ -4,18 +4,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
     env_file:
       - env/app
     depends_on:
       - db
-      - casdoor
-      - redis
       - backend
     networks:
       - app-network
-      - casdoor-network
 
   backend:
     image: beardedtek/newsfeed-backend:latest
@@ -23,12 +18,23 @@ services:
     build:
       context: ./backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8001
-    ports:
-      - "8001:8001"
     env_file:
       - env/backend
     depends_on:
       - redis
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    ports:
+      - "8880:80"
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app
+      - backend
     networks:
       - app-network
 
@@ -64,70 +70,19 @@ services:
       - env/backend
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - app-network
-
-  casdoor:
-    image: casbin/casdoor:latest
-    restart: always
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./casdoor/app.conf:/conf/app.conf
-      - ./casdoor/init_data.json:/conf/init_data.json
-    depends_on:
-      - casdoor-db
-    networks:
-      - app-network
-      - casdoor-network
-
-  casdoor-db:
-    image: postgres:15-alpine
-    restart: always
-    env_file:
-      - env/casdoor
-    volumes:
-      - casdoor_postgres_data:/var/lib/postgresql/data
-    networks:
-      - casdoor-network
 
   redis:
     image: redis:7-alpine
     restart: always
     command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
-    ports:
-      - "6379:6379"
     networks:
       - app-network
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - db
-      - casdoor-db
-    networks:
-      - app-network
-      - casdoor-network
-
 
 networks:
   app-network:
     driver: bridge
-  casdoor-network:
-    driver: bridge
 
 volumes:
   postgres_data:
-  casdoor_postgres_data:
-  pgadmin_data:
