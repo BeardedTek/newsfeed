@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense, useRef, useCallback, useMemo } from 'rea
 import { Spinner, Badge, Select } from 'flowbite-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+const API_BASE = '/api';
 
 // Add these constants at the top of the file
 const BATCH_SIZE = 10; // Maximum number of articles to send in a batch

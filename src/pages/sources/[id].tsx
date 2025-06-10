@@ -1,7 +1,8 @@
+import type { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { Container, Typography, Box } from '@mui/material';
-import NewsFeed from '../../components/NewsFeed';
+import NewsFeed from '@/components/NewsFeed';
 import { Article } from '../../types/article';
 
 export default function SourcePage() {
