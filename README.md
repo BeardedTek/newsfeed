@@ -1,21 +1,50 @@
 # NewsFeed
 
-A modern news aggregation platform built with Next.js, FastAPI, and Docker.
+A modern news aggregation and personalization platform built with Next.js, FastAPI, and Docker. This application provides a seamless experience for users to discover, read, and organize news content from various sources.
 
 ## Features
 
-- Real-time news aggregation
-- User authentication with Casdoor
-- Categorization and related articles
-- Responsive design
-- Docker-based deployment
+- Real-time news aggregation and updates
+- User authentication and personalization (via Casdoor)
+- RSS feed integration (via FreshRSS)
+- AI-powered content categorization and recommendations
+- Responsive and modern UI built with Flowbite and Tailwind CSS
+- Background task processing with Celery
+- Redis caching for improved performance
+- PostgreSQL database for persistent storage
+
+## Demo
+[https://newsfeed.beardedtek.net](https://newsfeed.beardedtek.net)
+
+## Tech Stack
+
+### Frontend
+- Next.js 14
+- React 18
+- Material-UI
+- Tailwind CSS
+- TypeScript
+
+### Backend
+- FastAPI
+- Celery
+- Redis
+- PostgreSQL
+- Docker
+
+### Infrastructure
+- Docker & Docker Compose
+- Nginx for reverse proxy
+- Traefik support (optional)
 
 ## Prerequisites
 
 - Docker and Docker Compose
-- Git
+- Running FreshRSS Instance
+- Node.js 18+ (for local development)
+- Python 3.8+ (for local development)
 
-## Setup
+## Quick Start
 
 1. Clone the repository:
    ```bash
@@ -23,86 +52,63 @@ A modern news aggregation platform built with Next.js, FastAPI, and Docker.
    cd newsfeed
    ```
 
-2. Create an environment file:
-   - Copy the example environment file:
-   ```bash
-     cp env.example env
+2. Set up FreshRSS for API Access
+   On your already running instance of FreshRSS:
+      - Click the settings `gear` icon
+      - Click `Profile`
+      - Enter an API password under `External access via API`
+      - Save this password for the next step
+
+3. Set up environment variables:
+      Edit `env/app`
    ```
-   - Edit the `env` file and fill in the required environment variables:
-     ```
-     # App
-     APP_URL=https://newsfeed.${BASE_DOMAIN}
-     APP_SECRET=your-app-secret
+   # App configuration
+   APP_URL=http://localhost:8880/
+   APP_SECRET=asdfkle899839asdjlfiasdf08934
+   ```
 
-     # Casdoor
-     CASDOOR_ENDPOINT=https://casdoor.example.com
-     CASDOOR_CLIENT_ID=your-casdoor-client-id
-     CASDOOR_CLIENT_SECRET=your-casdoor-client-secret
-     CASDOOR_CERTIFICATE=your-casdoor-certificate
+   Edit `env/backend`
+   Make sure you enter your own already running instance of FreshRSS.
+   ```
+   # Backend and worker configuration
+   REDIS_URL=redis://redis:6379/0
+   FRESHRSS_URL=https://freshrss.example.com
+   FRESHRSS_API_USER=newsfeed
+   FRESHRSS_API_PASSWORD=newsfeed
+   OLLAMA_URL=http://ollama:11434
+   OLLAMA_MODEL=LLAMA3.2:3B
 
-     # Backend
-     REDIS_URL=redis://redis:6379/0
-     FRESHRSS_URL=your-freshrss-url
-     FRESHRSS_API_USER=your-freshrss-api-user
-     FRESHRSS_API_PASSWORD=your-freshrss-api-password
-     OLLAMA_URL=your-ollama-url
-     OLLAMA_MODEL=your-ollama-model
+   # Database configuration
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=postgres
+   POSTGRES_DB=newsfeed
+   POSTGRES_HOST=db
+   ```
 
-     # Database
-     POSTGRES_USER=postgres
-     POSTGRES_PASSWORD=postgres
-     POSTGRES_DB=newsfeed
+4. Create docker network
+   ```bash
+   docker network create newsfeed
+   ```
 
-     # freshrss-db
-     FRESHRSS_DB_TYPE=pgsql
-     FRESHRSS_DB_HOST=freshrss-db
-     FRESHRSS_DB_USER=freshrss
-     FRESHRSS_DB_PASSWORD=freshrss
-     FRESHRSS_DB_BASE=freshrss
-
-     # casdoor-db
-     POSTGRES_USER=postgres
-     POSTGRES_PASSWORD=postgres
-     POSTGRES_DB=casdoor
-
-     # freshrss
-     PUID=1000
-     PGID=1000
-     TZ=UTC
-
-     # BASE_DOMAIN
-     BASE_DOMAIN=your-base-domain
-     ```
-
-3. Build and start the services:
+5. Start the services:
    ```bash
    docker-compose up --build
    ```
 
-4. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8001
-   - Casdoor: http://localhost:8000
-   - FreshRSS: http://localhost:8080
-
-## Development
-
-- To run the frontend in development mode:
-  ```bash
-  cd frontend
-  npm install
-  npm run dev
-  ```
-
-- To run the backend in development mode:
+6. View docker logs to make sure everything is working
    ```bash
-  cd backend
-  python -m venv venv
-  source venv/bin/activate  # On Windows: venv\Scripts\activate
-  pip install -r requirements.txt
-  uvicorn app.main:app --reload
-  ```
+   docker compose logs -f
+   ```
+
+7. Access the application:
+   - Frontend: http://localhost:8880
+   - Backend API: http://localhost:8880/api
+
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support, please open an issue in the GitHub repository or email newsfeed@beardedtek.com

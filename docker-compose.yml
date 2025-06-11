@@ -10,7 +10,7 @@ services:
       - db
       - backend
     networks:
-      - app-network
+      - newsfeed
 
   backend:
     image: beardedtek/newsfeed-backend:latest
@@ -23,7 +23,7 @@ services:
     depends_on:
       - redis
     networks:
-      - app-network
+      - newsfeed
 
   nginx:
     image: nginx:latest
@@ -36,7 +36,7 @@ services:
       - app
       - backend
     networks:
-      - app-network
+      - newsfeed
 
   worker:
     image: beardedtek/newsfeed-backend:latest
@@ -48,7 +48,7 @@ services:
       - redis
       - backend
     networks:
-      - app-network
+      - newsfeed
 
   beat:
     image: beardedtek/newsfeed-backend:latest
@@ -61,7 +61,7 @@ services:
       - worker
       - backend
     networks:
-      - app-network
+      - newsfeed
 
   db:
     image: postgres:15-alpine
@@ -71,18 +71,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - app-network
+      - newsfeed
 
   redis:
     image: redis:7-alpine
     restart: always
     command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
     networks:
-      - app-network
+      - newsfeed
 
 networks:
-  app-network:
-    driver: bridge
+  newsfeed:
+    external: true
 
 volumes:
   postgres_data:
