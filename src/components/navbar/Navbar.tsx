@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { Navbar as FlowbiteNavbar, Button, TextInput } from 'flowbite-react';
-import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch } from 'react-icons/hi';
+import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch, HiMenu } from 'react-icons/hi';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSearchContext } from '@/context/SearchContext';
@@ -57,6 +57,7 @@ export function NavbarContent() {
   const { showSearch, toggleSearch, setShowSearch } = useSearchContext();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setShowSearch(!!searchParams?.has('q'));
@@ -77,7 +78,7 @@ export function NavbarContent() {
   };
 
   return (
-    <FlowbiteNavbar fluid className="sticky top-0 z-50 border-b">
+    <FlowbiteNavbar fluid className="sticky top-0 z-50 border-b relative">
       <FlowbiteNavbar.Brand href="/">
         <div className="flex flex-row items-center gap-3">
           {/* Column 1: Favicon */}
@@ -90,8 +91,18 @@ export function NavbarContent() {
         </div>
       </FlowbiteNavbar.Brand>
 
-      <div className="flex items-center">
-        <div className="hidden md:flex ml-10">
+      <div className="flex items-center ml-auto">
+        {/* Hamburger icon for mobile */}
+        <button
+          className="md:hidden p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+          aria-label="Toggle menu"
+        >
+          <HiMenu className="w-7 h-7 text-gray-700 dark:text-gray-200" />
+        </button>
+
+        {/* Desktop nav links */}
+        <div className="hidden md:flex items-center ml-10">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -117,15 +128,58 @@ export function NavbarContent() {
             <span className="hidden md:inline">Search</span>
           </button>
         </div>
-        <Button
-          color="gray"
-          pill
-          onClick={() => setIsDarkMode((prev) => !prev)}
-          className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700"
-        >
-          {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
-        </Button>
       </div>
+
+      {/* Mobile dropdown menu - direct child of navbar */}
+      {mobileMenuOpen && (
+        <div className="relative w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-md md:hidden z-50 overflow-y-auto max-h-screen">
+          <div className="flex flex-col py-2">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
+                  link.href === '/search' ? 'cursor-pointer' : ''
+                }`}
+                onClick={link.href === '/search' ? (e) => { e.preventDefault(); toggleSearch(); setMobileMenuOpen(false); } : () => setMobileMenuOpen(false)}
+              >
+                <link.icon className="w-5 h-5 mr-2" />
+                <span>{link.label}</span>
+              </Link>
+            ))}
+            {/* Search button styled as a nav link */}
+            <button
+              type="button"
+              aria-label="Toggle search bar"
+              onClick={() => { toggleSearch(); setMobileMenuOpen(false); }}
+              className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer ${showSearch ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              style={{ border: 'none', background: 'none' }}
+            >
+              <HiSearch className="w-5 h-5 mr-2" />
+              <span>Search</span>
+            </button>
+            {/* Mobile light/dark mode toggle */}
+            <Button
+              color="gray"
+              pill
+              onClick={() => setIsDarkMode((prev) => !prev)}
+              className="mt-2 mx-4 p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 flex md:hidden"
+            >
+              {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop light/dark mode toggle */}
+      <Button
+        color="gray"
+        pill
+        onClick={() => setIsDarkMode((prev) => !prev)}
+        className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 hidden md:inline-flex"
+      >
+        {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
+      </Button>
     </FlowbiteNavbar>
   );
 }
