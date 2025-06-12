@@ -37,4 +37,7 @@ async def batch_thumbnails(article_ids: List[int], db: Session = Depends(get_db)
         if article and article.thumbnail_url:
             results[str(article_id)] = article.thumbnail_url
     
-    return results 
+    return results
+
+# Thumbnail URLs are now included in the articles response
+# This file is kept for future use if needed 

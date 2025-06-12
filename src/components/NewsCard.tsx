@@ -74,9 +74,9 @@ const NewsCard: React.FC<NewsCardProps> = ({ article, summary, thumbnail, relate
           href={article.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:underline flex-1 min-w-0"
+          className="hover:underline flex-1 min-w-0 text-gray-900 dark:text-white"
         >
-          <h2 className="text-lg font-semibold dark:text-white mb-1 line-clamp-2">{article.title}</h2>
+          <h2 className="text-lg font-semibold mb-1 line-clamp-2">{article.title}</h2>
         </a>
       </div>
       {/* Third row: Summary */}
@@ -86,7 +86,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ article, summary, thumbnail, relate
         {categories && categories.length > 0 && categories.map((category: string) => (
           <span
             key={category}
-            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium px-2 py-1 rounded-full mb-1"
+            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium px-2 py-1 rounded-full mb-1 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {category}
           </span>

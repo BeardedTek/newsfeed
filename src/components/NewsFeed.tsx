@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useState, Suspense, useRef, useCallback, useMemo } from 'react';
-import { Spinner, Badge, Select } from 'flowbite-react';
+import { Spinner, Badge, Select, TextInput } from 'flowbite-react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { HiSearch } from 'react-icons/hi';
+import { useSearchContext } from '@/context/SearchContext';
 
 const API_BASE = '/api';
 
 // Add these constants at the top of the file
-const BATCH_SIZE = 10; // Maximum number of articles to send in a batch
+const BATCH_SIZE = 15; // Number of articles to load per batch
 const BATCH_DEBOUNCE_MS = 200; // Debounce delay in milliseconds
 
 function formatDate(timestamp: number) {
@@ -97,7 +99,7 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
             <img
               src={thumbnail}
               alt="thumbnail"
-              className="w-24 h-24 object-cover rounded flex-shrink-0"
+              className="w-24 h-24 object-cover rounded flex-shrink-0 border border-gray-200 dark:border-gray-700"
             />
           )}
           <div className="flex-1 min-w-0">
@@ -114,8 +116,8 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
               )}
               <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatDate(article.published * 1000)}</span>
             </div>
-            <a href={article.url || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
-              <h2 className="text-lg font-semibold mb-1 dark:text-white">{article.title}</h2>
+            <a href={article.url || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold mb-1">{article.title}</h2>
             </a>
           </div>
         </div>
@@ -130,7 +132,7 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
                   href={rel.url || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-bold text-black dark:text-gray-200 hover:underline"
+                  className="text-xs font-bold text-gray-900 dark:text-gray-200 hover:underline"
                 >
                   {rel.origin?.title ? `${rel.origin.title}: ` : ''}{rel.title}
                 </a>
@@ -145,7 +147,7 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
             <a
               key={cat}
               href={`/?category=${cat.toLowerCase()}`}
-              className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+              className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               {cat}
             </a>
@@ -188,57 +190,115 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams?.get('category') || initialCategory;
+  const query = searchParams?.get('q') || searchQuery;
   const [articles, setArticles] = useState<Article[]>(initialArticles ? initialArticles.map(normalizeArticle) : []);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Record<string, string[]>>({});
   const [categorizing, setCategorizing] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>(parentSelectedSource || 'all');
   const [allSources, setAllSources] = useState<string[]>(parentSources || []);
-  const [visibleCount, setVisibleCount] = useState(15); // Start with 15 articles
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [relatedStories, setRelatedStories] = useState<Record<string, Article[]>>({});
+  const [hasMore, setHasMore] = useState(true);
+  const { showSearch, setShowSearch } = useSearchContext();
 
-  // Reset to page 1 if category, source, or pageSize changes
+  const loadMoreArticles = useCallback(async () => {
+    if (isFetchingMore || !hasMore) return;
+
+    setIsFetchingMore(true);
+    try {
+      const skip = visibleCount;
+      const queryParams = new URLSearchParams();
+      if (category) queryParams.append('category', category);
+      if (selectedSource !== 'all') queryParams.append('source', selectedSource);
+      if (query) queryParams.append('search', query);
+      queryParams.append('skip', skip.toString());
+      queryParams.append('limit', BATCH_SIZE.toString());
+
+      const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`);
+      const data = await response.json();
+      
+      const newArticles = data.articles || [];
+      if (newArticles.length === 0) {
+        setHasMore(false);
+      } else {
+        const normalizedNewArticles = newArticles.map(normalizeArticle);
+        setArticles(prev => [...prev, ...normalizedNewArticles]);
+        setVisibleCount(prev => prev + BATCH_SIZE);
+      }
+    } catch (error) {
+      console.error('Error loading more articles:', error);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  }, [isFetchingMore, hasMore, visibleCount, category, selectedSource, query]);
+
+  // Reset to initial batch if category, source, or search changes
   useEffect(() => {
-    setVisibleCount(15);
-  }, [category, selectedSource]);
+    setVisibleCount(BATCH_SIZE);
+    setHasMore(true);
+  }, [category, selectedSource, query]);
 
+  // Intersection Observer for infinite scrolling
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && hasMore && !isFetchingMore && !loading) {
+          loadMoreArticles();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => {
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
+    };
+  }, [hasMore, isFetchingMore, loading, category, selectedSource, query, loadMoreArticles]);
+
+  // Initial articles fetch
   useEffect(() => {
     setLoading(true);
-    setVisibleCount(15);
+    setVisibleCount(BATCH_SIZE);
     setSelectedSource('all');
-    if (searchQuery && searchQuery.length > 0) {
-      fetch(`${API_BASE}/articles?q=${encodeURIComponent(searchQuery)}`)
-        .then(res => res.json())
-        .then(data => {
-          let items = (data.articles || []).sort((a: Article, b: Article) => {
-            return (b.published || 0) - (a.published || 0);
-          });
-          items = dedupeArticles(items).map(normalizeArticle);
-          setArticles(items);
-          const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
-          setAllSources(uniqueSources);
-          if (onSourceChange) onSourceChange('all');
-          setLoading(false);
+    setHasMore(true);
+
+    const fetchInitialArticles = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (query) queryParams.append('search', query);
+        queryParams.append('limit', BATCH_SIZE.toString());
+
+        const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`);
+        const data = await response.json();
+        
+        let items = (data.articles || []).sort((a: Article, b: Article) => {
+          return (b.published || 0) - (a.published || 0);
         });
-    } else {
-      fetch(`${API_BASE}/articles`)
-        .then(res => res.json())
-        .then(data => {
-          let items = (data.articles || []).sort((a: Article, b: Article) => {
-            return (b.published || 0) - (a.published || 0);
-          });
-          items = dedupeArticles(items).map(normalizeArticle);
-          setArticles(items);
-          const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
-          setAllSources(uniqueSources);
-          if (onSourceChange) onSourceChange('all');
-          setLoading(false);
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+        items = dedupeArticles(items).map(normalizeArticle);
+        setArticles(items);
+        setHasMore(items.length === BATCH_SIZE);
+        
+        const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
+        setAllSources(uniqueSources);
+        if (onSourceChange) onSourceChange('all');
+      } catch (error) {
+        console.error('Error fetching initial articles:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialArticles();
+  }, [query, onSourceChange]);
 
   useEffect(() => {
     if (parentSources && parentSources.length !== allSources.length) {
@@ -279,32 +339,6 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
 
   // Infinite scroll: show only up to visibleCount
   const visibleArticles = filteredArticles.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredArticles.length;
-
-  // Infinite scroll logic
-  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
-    const target = entries[0];
-    if (target.isIntersecting && hasMore && !isFetchingMore) {
-      setIsFetchingMore(true);
-      setTimeout(() => {
-        setVisibleCount((prev) => Math.min(prev + 15, filteredArticles.length));
-        setIsFetchingMore(false);
-      }, 400); // Simulate loading delay
-    }
-  }, [hasMore, isFetchingMore, filteredArticles.length]);
-
-  useEffect(() => {
-    const option = {
-      root: null,
-      rootMargin: '20px',
-      threshold: 1.0
-    };
-    const observer = new window.IntersectionObserver(handleObserver, option);
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => {
-      if (loaderRef.current) observer.unobserve(loaderRef.current);
-    };
-  }, [handleObserver]);
 
   const handleSourceClick = (source: string) => {
     setSelectedSource(source);
@@ -408,77 +442,116 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
     if (onSourcesUpdate) onSourcesUpdate(allSources);
   }, [allSources]);
 
+  useEffect(() => {
+    setShowSearch(!!searchParams?.has('q'));
+  }, [searchParams, setShowSearch]);
+
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
 
   return (
     <div className="dark:bg-gray-900 max-w-6xl mx-auto mt-0">
       {/* Top latest news row */}
-      <div className="flex items-center justify-between mb-6 w-full sticky top-16 z-40 bg-gray-50 dark:bg-gray-900">
-        <div className="flex-1 min-w-0">
-          {!category ? (
-            <nav className="text-sm" aria-label="Breadcrumb">
-              <ol className="list-reset flex text-gray-600 dark:text-gray-300">
-                <li className="font-bold text-gray-900 dark:text-white">Latest News</li>
-              </ol>
-            </nav>
-          ) : (
-            <nav className="text-sm" aria-label="Breadcrumb">
-              <ol className="list-reset flex text-gray-600 dark:text-gray-300">
-                <li>
-                  <a href="/" className="hover:underline text-gray-800 dark:text-gray-200">Latest News</a>
-                </li>
-                <li>
-                  <span className="mx-2">/</span>
-                </li>
-                <li className="font-bold text-gray-900 dark:text-white">{category.charAt(0).toUpperCase() + category.slice(1)}</li>
-              </ol>
-            </nav>
-          )}
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Sources select */}
-          <Select
-            value={selectedSource}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-              setSelectedSource(e.target.value);
-              // Update URL to reflect the source filter
-              const params = new URLSearchParams(searchParams?.toString() || '');
-              params.set('source', e.target.value);
-              router.push(`/?${params.toString()}`);
-            }}
-            className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-          >
-            <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
-            {allSources.map(source => (
-              <option key={source} value={source} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source}</option>
-            ))}
-          </Select>
-          {/* Categories select */}
-          <Select
-            value={category || ''}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-              // Update URL to reflect the category filter
-              const params = new URLSearchParams(searchParams?.toString() || '');
-              if (e.target.value) {
-                params.set('category', e.target.value);
-              } else {
-                params.delete('category');
+      <div className="flex flex-col mb-6 w-full sticky top-16 z-40 bg-gray-50 dark:bg-gray-900">
+        {/* Search bar above filters */}
+        {showSearch && (
+          <div className="w-full mb-4 px-4">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const input = form.querySelector('input') as HTMLInputElement;
+              if (input.value.trim()) {
+                router.push(`/?q=${encodeURIComponent(input.value.trim())}`);
               }
-              router.push(`/?${params.toString()}`);
-            }}
-            className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-          >
-            <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
-            ))}
-          </Select>
+            }}>
+              <TextInput
+                type="search"
+                placeholder="Search articles..."
+                defaultValue={query ?? ''}
+                icon={HiSearch}
+                className="w-full max-w-2xl mx-auto"
+              />
+            </form>
+          </div>
+        )}
+        <div className="flex items-center justify-between px-4">
+          <div className="flex-1 min-w-0">
+            {query ? (
+              <nav className="text-sm" aria-label="Breadcrumb">
+                <ol className="list-reset flex text-gray-600 dark:text-gray-300">
+                  <li>
+                    <a href="/" className="hover:underline text-gray-800 dark:text-gray-200">Latest News</a>
+                  </li>
+                  <li>
+                    <span className="mx-2">/</span>
+                  </li>
+                  <li className="font-bold text-gray-900 dark:text-white">Search: {query}</li>
+                </ol>
+              </nav>
+            ) : !category ? (
+              <nav className="text-sm" aria-label="Breadcrumb">
+                <ol className="list-reset flex text-gray-600 dark:text-gray-300">
+                  <li className="font-bold text-gray-900 dark:text-white">Latest News</li>
+                </ol>
+              </nav>
+            ) : (
+              <nav className="text-sm" aria-label="Breadcrumb">
+                <ol className="list-reset flex text-gray-600 dark:text-gray-300">
+                  <li>
+                    <a href="/" className="hover:underline text-gray-800 dark:text-gray-200">Latest News</a>
+                  </li>
+                  <li>
+                    <span className="mx-2">/</span>
+                  </li>
+                  <li className="font-bold text-gray-900 dark:text-white">{category.charAt(0).toUpperCase() + category.slice(1)}</li>
+                </ol>
+              </nav>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Sources select */}
+            <Select
+              value={selectedSource}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                setSelectedSource(e.target.value);
+                // Update URL to reflect the source filter
+                const params = new URLSearchParams(searchParams?.toString() || '');
+                params.set('source', e.target.value);
+                router.push(`/?${params.toString()}`);
+              }}
+              className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+            >
+              <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
+              {allSources.map(source => (
+                <option key={source} value={source} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source}</option>
+              ))}
+            </Select>
+            {/* Categories select */}
+            <Select
+              value={category || ''}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                // Update URL to reflect the category filter
+                const params = new URLSearchParams(searchParams?.toString() || '');
+                if (e.target.value) {
+                  params.set('category', e.target.value);
+                } else {
+                  params.delete('category');
+                }
+                router.push(`/?${params.toString()}`);
+              }}
+              className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+            >
+              <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
+              ))}
+            </Select>
+          </div>
         </div>
       </div>
 
       {/* Articles grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredArticles.slice(0, visibleCount).map((article) => {
+        {visibleArticles.map((article) => {
           const articleCategories = article.categories || [];
           const related = relatedMap[article.id] || [];
           const summary = stripHtmlAndTruncate(article.summary?.content || '', 50);
@@ -498,7 +571,10 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
       </div>
       {/* Loader for infinite scroll */}
       <div ref={loaderRef} className="flex justify-center items-center h-16">
-        {hasMore && <Spinner />}
+        {isFetchingMore && <Spinner />}
+        {!hasMore && articles.length > 0 && (
+          <p className="text-gray-500 dark:text-gray-400 text-sm">No more articles to load</p>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { Navbar as FlowbiteNavbar, Button } from 'flowbite-react';
-import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck } from 'react-icons/hi';
+import { Navbar as FlowbiteNavbar, Button, TextInput } from 'flowbite-react';
+import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch } from 'react-icons/hi';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchContext } from '@/context/SearchContext';
 
 const GitHubLogo = ({ className = "" }) => (
   <svg viewBox="0 0 16 16" fill="currentColor" className={className} aria-hidden="true">
@@ -39,30 +41,39 @@ const NAV_LINKS = [
   },
 ];
 
-function getInitialTheme() {
-  if (typeof window === 'undefined') return false;
-  const saved = localStorage.getItem('theme');
-  if (saved === 'dark') return true;
-  if (saved === 'light') return false;
-  // Fallback to system preference
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
-function NavbarContent() {
+export function NavbarContent() {
+  // Restore dark mode persistence
+  const getInitialTheme = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('theme');
+      if (stored) return stored === 'dark';
+      // Default to system preference
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  };
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { showSearch, toggleSearch, setShowSearch } = useSearchContext();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+    setShowSearch(!!searchParams?.has('q'));
+  }, [searchParams, setShowSearch]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.documentElement.classList.toggle('dark', isDarkMode);
+      localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     }
   }, [isDarkMode]);
 
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
 
   return (
@@ -78,32 +89,42 @@ function NavbarContent() {
           </div>
         </div>
       </FlowbiteNavbar.Brand>
-      <div className="flex md:order-2 gap-2 items-center">
-        <Button
-          color={isDarkMode ? 'gray' : 'light'}
-          onClick={toggleDarkMode}
-          className="px-3"
-        >
-          {isDarkMode ? (
-            <HiSun className="h-5 w-5" />
-          ) : (
-            <HiMoon className="h-5 w-5" />
-          )}
-        </Button>
-      </div>
-      <div className="flex flex-row gap-2 md:gap-2 ml-2">
-        {NAV_LINKS.map(({ href, label, icon: Icon, sr, external }) => (
-          <Link
-            key={href}
-            href={href}
-            target={external ? '_blank' : undefined}
-            rel={external ? 'noopener noreferrer' : undefined}
-            className="flex items-center px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+
+      <div className="flex items-center">
+        <div className="hidden md:flex ml-10">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
+                link.href === '/search' ? 'cursor-pointer' : ''
+              }`}
+              onClick={link.href === '/search' ? (e) => { e.preventDefault(); toggleSearch(); } : undefined}
+            >
+              <link.icon className="w-5 h-5 md:mr-2" />
+              <span className="hidden md:inline">{link.label}</span>
+            </Link>
+          ))}
+          {/* Search button styled as a nav link */}
+          <button
+            type="button"
+            aria-label="Toggle search bar"
+            onClick={toggleSearch}
+            className={`flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer ${showSearch ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+            style={{ border: 'none', background: 'none' }}
           >
-            <Icon className="w-5 h-5 md:mr-2 text-gray-900 dark:text-white" aria-hidden="true" />
-            <span className="hidden md:inline font-bold">{label}</span>
-          </Link>
-        ))}
+            <HiSearch className="w-5 h-5 md:mr-2" />
+            <span className="hidden md:inline">Search</span>
+          </button>
+        </div>
+        <Button
+          color="gray"
+          pill
+          onClick={() => setIsDarkMode((prev) => !prev)}
+          className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700"
+        >
+          {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
+        </Button>
       </div>
     </FlowbiteNavbar>
   );

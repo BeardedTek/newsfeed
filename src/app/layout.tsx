@@ -4,6 +4,7 @@ import "./globals.css";
 import { Flowbite } from "flowbite-react";
 import Navbar from '@/components/navbar/Navbar';
 import PlausibleScript from "@/components/PlausibleScript";
+import { SearchProvider } from '@/context/SearchContext';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,14 +38,16 @@ export default function RootLayout({
       </head>
       <body className={inter.className + " bg-gray-50 dark:bg-gray-900"}>
         <PlausibleScript />
-        <Flowbite>
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-            <Navbar />
-            <main className="container mx-auto px-4 py-4 flex-1 dark:text-white">
-              {children}
-            </main>
-          </div>
-        </Flowbite>
+        <SearchProvider>
+          <Flowbite>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+              <Navbar />
+              <main className="container mx-auto px-4 py-4 flex-1 dark:text-white">
+                {children}
+              </main>
+            </div>
+          </Flowbite>
+        </SearchProvider>
       </body>
     </html>
   );
