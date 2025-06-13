@@ -11,6 +11,7 @@ const API_BASE = '/api';
 // Add these constants at the top of the file
 const BATCH_SIZE = 15; // Number of articles to load per batch
 const BATCH_DEBOUNCE_MS = 200; // Debounce delay in milliseconds
+const RELATED_BATCH_SIZE = 50; // Increased from 15 to 50
 
 function formatDate(timestamp: number) {
   const date = new Date(timestamp);
@@ -87,7 +88,7 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
   article: Article, 
   summary: string, 
   thumbnail: string | null, 
-  related: Article[], 
+  related: string[],
   categories: string[],
   onSourceClick: (source: string) => void 
 }) {
@@ -126,15 +127,15 @@ function NewsCard({ article, summary, thumbnail, related, categories, onSourceCl
           <div className="mt-2">
             <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Related articles:</div>
             <div className="flex flex-col gap-1">
-              {related.map((rel) => (
+              {related.map((relId) => (
                 <a
-                  key={rel.id}
-                  href={rel.url || '#'}
+                  key={relId}
+                  href={`/articles/${relId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-bold text-gray-900 dark:text-gray-200 hover:underline"
                 >
-                  {rel.origin?.title ? `${rel.origin.title}: ` : ''}{rel.title}
+                  {relId}
                 </a>
               ))}
             </div>
@@ -170,12 +171,12 @@ interface Article {
   };
   url?: string;
   categories?: string[];
+  related?: string[];
 }
 
 interface NewsFeedProps {
   initialCategory?: string;
   searchQuery?: string | null;
-  allSources?: string[];
   selectedSource?: string;
   onSourceChange?: (source: string) => void;
   onSourcesUpdate?: (sources: string[]) => void;
@@ -186,21 +187,18 @@ const CATEGORIES = [
   'Politics', 'US', 'World', 'Sports', 'Technology', 'Entertainment', 'Science', 'Health', 'Business'
 ];
 
-function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSources, selectedSource: parentSelectedSource, onSourceChange, onSourcesUpdate, initialArticles }: NewsFeedProps) {
+function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentSelectedSource, onSourceChange, onSourcesUpdate, initialArticles }: NewsFeedProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams?.get('category') || initialCategory;
   const query = searchParams?.get('q') || searchQuery;
   const [articles, setArticles] = useState<Article[]>(initialArticles ? initialArticles.map(normalizeArticle) : []);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<Record<string, string[]>>({});
-  const [categorizing, setCategorizing] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>(parentSelectedSource || 'all');
-  const [allSources, setAllSources] = useState<string[]>(parentSources || []);
+  const [allSources, setAllSources] = useState<{ id: string; title: string }[]>([]);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [relatedStories, setRelatedStories] = useState<Record<string, Article[]>>({});
   const [hasMore, setHasMore] = useState(true);
   const { showSearch, setShowSearch } = useSearchContext();
 
@@ -286,9 +284,6 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
         items = dedupeArticles(items).map(normalizeArticle);
         setArticles(items);
         setHasMore(items.length === BATCH_SIZE);
-        
-        const uniqueSources = Array.from(new Set(items.map((item: Article) => item.origin?.title).filter(Boolean))) as string[];
-        setAllSources(uniqueSources);
         if (onSourceChange) onSourceChange('all');
       } catch (error) {
         console.error('Error fetching initial articles:', error);
@@ -301,37 +296,14 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
   }, [query, onSourceChange]);
 
   useEffect(() => {
-    if (parentSources && parentSources.length !== allSources.length) {
-      setAllSources(parentSources);
-    }
     if (parentSelectedSource && parentSelectedSource !== selectedSource) {
       setSelectedSource(parentSelectedSource);
     }
-  }, [parentSources, parentSelectedSource]);
-
-  // Compute related articles for each article (move to useMemo)
-  const SIMILARITY_THRESHOLD = 0.3;
-  const MAX_RELATED = 3;
-  const relatedMap = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    articles.forEach((article, idx) => {
-      const related = articles
-        .filter((other, jdx) => idx !== jdx && jaccardSimilarity(article.title, other.title) >= SIMILARITY_THRESHOLD)
-        .sort((a, b) => jaccardSimilarity(article.title, b.title) - jaccardSimilarity(article.title, a.title))
-        .slice(0, MAX_RELATED);
-      map[article.id] = related;
-    });
-    return map;
-  }, [articles]);
-
-  // Extract all possible sources from all loaded articles
-  useEffect(() => {
-    setAllSources(Array.from(new Set(articles.map((item: Article) => item.origin?.title).filter(Boolean))) as string[]);
-  }, [articles]);
+  }, [parentSelectedSource]);
 
   // Filter articles by category and source
   const filteredArticles = articles.filter(article => {
-    const articleCats = categories[article.id] || getCategories(article.title + ' ' + (article.summary?.content || ''));
+    const articleCats = article.categories || getCategories(article.title + ' ' + (article.summary?.content || ''));
     const matchesCategory = !category || articleCats.some(cat => cat.toLowerCase() === category);
     const matchesSource = selectedSource === 'all' || article.origin?.title === selectedSource;
     return matchesCategory && matchesSource;
@@ -348,103 +320,25 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
     router.push(`/?${params.toString()}`);
   };
 
-  // Replace the useEffect for fetching categories and related with this updated version
-  useEffect(() => {
-    if (!loading) {
-      const visibleArticles = filteredArticles.slice(0, visibleCount);
-      // Only fetch for articles missing related or categories
-      const missingRelated = visibleArticles.filter(article => !relatedStories[article.id]);
-      const missingCategories = visibleArticles.filter(article => !categories[article.id]);
-      
-      // Test fetch for a single article's categories
-      if (missingCategories.length > 0) {
-        const testArticleId = missingCategories[0].id;
-        fetch(`${API_BASE}/categories/${testArticleId}`)
-          .then(res => {
-            return res.json();
-          })
-          .then(data => {
-          })
-          .catch(err => {
-          });
-      }
-
-      if (missingRelated.length > 0) {
-        const batch = missingRelated.slice(0, BATCH_SIZE);
-        const timeoutId = setTimeout(() => {
-          // Fetch related articles
-          fetch(`${API_BASE}/related/batch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(batch.map(a => Number(a.id))),
-          })
-            .then(res => res.json())
-            .then(relatedData => {
-              const newRelated: Record<string, Article[]> = {};
-              Object.entries(relatedData).forEach(([articleId, related]: [string, any]) => {
-                if (related && related.length > 0) {
-                  newRelated[articleId] = related.map((r: any) => ({
-                    id: r,
-                    title: articles.find(a => a.id === r)?.title || '',
-                    summary: articles.find(a => a.id === r)?.summary || { content: '' },
-                    published: articles.find(a => a.id === r)?.published || 0,
-                    origin: articles.find(a => a.id === r)?.origin || { title: '' },
-                    url: articles.find(a => a.id === r)?.url || '',
-                    categories: articles.find(a => a.id === r)?.categories || []
-                  }));
-                }
-              });
-              setRelatedStories(prev => ({ ...prev, ...newRelated }));
-            })
-            .catch(err => {
-            });
-        }, BATCH_DEBOUNCE_MS);
-        return () => clearTimeout(timeoutId);
-      }
-
-      if (missingCategories.length > 0) {
-        const batch = missingCategories.slice(0, BATCH_SIZE);
-        const timeoutId = setTimeout(() => {
-          // Fetch categories
-          fetch(`${API_BASE}/categories/batch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(batch.map(a => Number(a.id))),
-          })
-            .then(res => {
-              return res.json();
-            })
-            .then(categoryData => {
-              const newCategories: Record<string, string[]> = {};
-              Object.entries(categoryData).forEach(([articleId, data]: [string, any]) => {
-                if (data && data.categories && data.categories.length > 0) {
-                  newCategories[articleId] = data.categories;
-                }
-              });
-              setCategories(prev => ({ ...prev, ...newCategories }));
-            })
-            .catch(err => {
-            });
-        }, BATCH_DEBOUNCE_MS);
-        return () => clearTimeout(timeoutId);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, visibleCount, filteredArticles, categories, relatedStories]);
-
-  // When source changes, notify parent
-  useEffect(() => {
-    if (onSourceChange) onSourceChange(selectedSource);
-  }, [selectedSource]);
-
-  // Call onSourcesUpdate whenever allSources changes
-  useEffect(() => {
-    if (onSourcesUpdate) onSourcesUpdate(allSources);
-  }, [allSources]);
-
   useEffect(() => {
     setShowSearch(!!searchParams?.has('q'));
   }, [searchParams, setShowSearch]);
+
+  // Fetch sources from /api/sources/ on mount
+  useEffect(() => {
+    const fetchSources = async () => {
+      try {
+        const res = await fetch('/api/sources/');
+        const data = await res.json();
+        if (data.sources) {
+          setAllSources(data.sources);
+        }
+      } catch (error) {
+        console.error('Error fetching sources:', error);
+      }
+    };
+    fetchSources();
+  }, []);
 
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
 
@@ -473,87 +367,48 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
             </form>
           </div>
         )}
-        <div className="flex items-center justify-between px-4">
-          <div className="flex-1 min-w-0">
-            {query ? (
-              <nav className="text-sm" aria-label="Breadcrumb">
-                <ol className="list-reset flex text-gray-600 dark:text-gray-300">
-                  <li>
-                    <a href="/" className="hover:underline text-gray-800 dark:text-gray-200">Latest News</a>
-                  </li>
-                  <li>
-                    <span className="mx-2">/</span>
-                  </li>
-                  <li className="font-bold text-gray-900 dark:text-white">Search: {query}</li>
-                </ol>
-              </nav>
-            ) : !category ? (
-              <nav className="text-sm" aria-label="Breadcrumb">
-                <ol className="list-reset flex text-gray-600 dark:text-gray-300">
-                  <li className="font-bold text-gray-900 dark:text-white">Latest News</li>
-                </ol>
-              </nav>
-            ) : (
-              <nav className="text-sm" aria-label="Breadcrumb">
-                <ol className="list-reset flex text-gray-600 dark:text-gray-300">
-                  <li>
-                    <a href="/" className="hover:underline text-gray-800 dark:text-gray-200">Latest News</a>
-                  </li>
-                  <li>
-                    <span className="mx-2">/</span>
-                  </li>
-                  <li className="font-bold text-gray-900 dark:text-white">{category.charAt(0).toUpperCase() + category.slice(1)}</li>
-                </ol>
-              </nav>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Sources select */}
-            <Select
-              value={selectedSource}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                setSelectedSource(e.target.value);
-                // Update URL to reflect the source filter
-                const params = new URLSearchParams(searchParams?.toString() || '');
-                params.set('source', e.target.value);
-                router.push(`/?${params.toString()}`);
-              }}
-              className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-            >
-              <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
-              {allSources.map(source => (
-                <option key={source} value={source} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source}</option>
-              ))}
-            </Select>
-            {/* Categories select */}
-            <Select
-              value={category || ''}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                // Update URL to reflect the category filter
-                const params = new URLSearchParams(searchParams?.toString() || '');
-                if (e.target.value) {
-                  params.set('category', e.target.value);
-                } else {
-                  params.delete('category');
-                }
-                router.push(`/?${params.toString()}`);
-              }}
-              className="w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-            >
-              <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
-              ))}
-            </Select>
-          </div>
+        <div className="flex flex-col gap-2 px-4 sm:flex-row sm:items-center sm:gap-4">
+          <Select
+            value={selectedSource}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setSelectedSource(e.target.value);
+              // Update URL to reflect the source filter
+              const params = new URLSearchParams(searchParams?.toString() || '');
+              params.set('source', e.target.value);
+              router.push(`/?${params.toString()}`);
+            }}
+            className="w-full sm:max-w-2/5 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+          >
+            <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
+            {allSources.map(source => (
+              <option key={source.id} value={source.title} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source.title}</option>
+            ))}
+          </Select>
+          <Select
+            value={category || ''}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              // Update URL to reflect the category filter
+              const params = new URLSearchParams(searchParams?.toString() || '');
+              if (e.target.value) {
+                params.set('category', e.target.value);
+              } else {
+                params.delete('category');
+              }
+              router.push(`/?${params.toString()}`);
+            }}
+            className="w-full sm:max-w-2/5 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+          >
+            <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
+            ))}
+          </Select>
         </div>
       </div>
 
       {/* Articles grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleArticles.map((article) => {
-          const articleCategories = article.categories || [];
-          const related = relatedMap[article.id] || [];
           const summary = stripHtmlAndTruncate(article.summary?.content || '', 50);
           const thumbnail = extractThumbnail(article.summary?.content || '');
           return (
@@ -562,8 +417,8 @@ function NewsFeedContent({ initialCategory, searchQuery, allSources: parentSourc
               article={article}
               summary={summary}
               thumbnail={thumbnail}
-              related={related}
-              categories={articleCategories}
+              related={article.related || []}
+              categories={article.categories || []}
               onSourceClick={handleSourceClick}
             />
           );

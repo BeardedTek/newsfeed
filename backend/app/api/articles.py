@@ -5,8 +5,19 @@ from typing import List, Dict, Any
 from app.database import get_db
 from app.models.database import Article, Category
 from app.models.article import Article as ArticleSchema
+from freshrss_api import FreshRSSAPI
+from loguru import logger
 
 router = APIRouter()
+
+def get_freshrss_client() -> FreshRSSAPI:
+    """Create and return a FreshRSS API client instance using environment variables."""
+    try:
+        client = FreshRSSAPI(verbose=True)  # Uses env vars
+        return client
+    except Exception as e:
+        logger.error(f"Failed to initialize FreshRSS client: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to initialize FreshRSS client")
 
 @router.get("")
 @router.get("/")
@@ -62,10 +73,36 @@ async def get_articles(
     }
 
 @router.get("/{article_id}")
-def get_article(article_id: int, db: Session = Depends(get_db)):
+async def get_article(article_id: int, db: Session = Depends(get_db)):
+    # First try to get from database
     article = db.query(Article).filter(Article.id == article_id).first()
+    
     if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
+        # If not in database, try to fetch directly from FreshRSS
+        try:
+            client = get_freshrss_client()
+            items_response = client.get_items_from_ids([article_id])
+            items = items_response["items"] if isinstance(items_response, dict) and "items" in items_response else items_response
+            if not items:
+                raise HTTPException(status_code=404, detail="Article not found")
+            item = items[0]
+            return {
+                "article": {
+                    "id": str(item["id"]),
+                    "title": item["title"],
+                    "summary": {"content": item["content"]},
+                    "content": item["content"],
+                    "published": int(item["created_on_time"]),
+                    "origin": item.get("author"),
+                    "url": item["url"],
+                    "categories": item.get("categories", []),
+                    "related": [],
+                    "thumbnail_url": item.get("enclosure_url", "")
+                }
+            }
+        except Exception as e:
+            logger.error(f"Failed to fetch article from FreshRSS: {str(e)}")
+            raise HTTPException(status_code=404, detail="Article not found")
     
     return {
         "article": {

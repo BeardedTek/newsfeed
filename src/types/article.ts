@@ -7,4 +7,5 @@ export interface Article {
   origin: { title: string };
   categories: string[];
   related: string[];
+  thumbnail_url?: string;
 } 

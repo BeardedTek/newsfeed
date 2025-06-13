@@ -13,6 +13,8 @@ from celery.schedules import crontab
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
+from freshrss_api import FreshRSSAPI
+from loguru import logger
 
 from app.database import SessionLocal
 from app.models.database import Article, Category
@@ -52,6 +54,15 @@ CATEGORY_KEYWORDS = {
     'Business': ['business', 'market', 'stock', 'finance', 'economy', 'trade', 'company', 'corporate', 'industry'],
 }
 
+def get_freshrss_client() -> FreshRSSAPI:
+    """Create and return a FreshRSS API client instance using environment variables."""
+    try:
+        client = FreshRSSAPI(verbose=True)  # Uses env vars
+        return client
+    except Exception as e:
+        logger.error(f"Failed to initialize FreshRSS client: {str(e)}")
+        raise ValueError("Failed to initialize FreshRSS client")
+
 def get_or_create_category(db: Session, name: str) -> Category:
     category = db.query(Category).filter(Category.name == name).first()
     if category:
@@ -67,47 +78,33 @@ def get_or_create_category(db: Session, name: str) -> Category:
     return category
 
 async def fetch_articles(batch_size=100) -> List[Dict[str, Any]]:
-    async with httpx.AsyncClient() as client:
-        # Login to get auth token
-        login_url = f"{os.getenv('FRESHRSS_URL')}/api/greader.php/accounts/ClientLogin"
-        login_data = {
-            "Email": os.getenv('FRESHRSS_API_USER'),
-            "Passwd": os.getenv('FRESHRSS_API_PASSWORD')
-        }
-        login_res = await client.post(login_url, data=login_data)
-        auth_token = login_res.text.split('Auth=')[1].strip()
-
+    try:
+        client = get_freshrss_client()
         # Calculate timestamp for 3 days ago
-        three_days_ago = int((datetime.utcnow() - timedelta(days=3)).timestamp())
-
-        # Fetch all articles in batches
-        articles_url = f"{os.getenv('FRESHRSS_URL')}/api/greader.php/reader/api/0/stream/contents/user/-/state/com.google/reading-list"
-        headers = {"Authorization": f"GoogleLogin auth={auth_token}"}
-        all_items = []
-        continuation = None
-        while True:
-            params = {"n": str(batch_size)}
-            if continuation:
-                params["c"] = continuation
-            res = await client.get(articles_url, headers=headers, params=params)
-            data = res.json()
-            items = data.get("items", [])
-            
-            # Filter items from the last 3 days
-            recent_items = [item for item in items if item.get('published', 0) >= three_days_ago]
-            all_items.extend(recent_items)
-            
-            print(f"Fetched {len(items)} articles, {len(recent_items)} from last 3 days, total so far: {len(all_items)}")
-            
-            # If we've gone past 3 days worth of articles, stop fetching
-            if not items or (items and items[-1].get('published', 0) < three_days_ago):
-                break
-                
-            continuation = data.get("continuation")
-            if not continuation:
-                break
-                
-        return all_items
+        three_days_ago = datetime.utcnow() - timedelta(days=3)
+        # Get items from the last 3 days
+        items = client.get_items_from_dates(
+            since=three_days_ago,
+            limit=batch_size
+        )
+        # Convert items to the format we need
+        articles = []
+        for item in items:
+            article = {
+                "id": str(item["id"]),
+                "title": item["title"],
+                "content": item["content"],
+                "published": int(item["created_on_time"]),
+                "author": item.get("author"),
+                "url": item["url"],
+                "categories": item.get("categories", []),
+                "enclosure_url": item.get("enclosure_url", "")
+            }
+            articles.append(article)
+        return articles
+    except Exception as e:
+        logger.error(f"Error fetching articles from FreshRSS: {str(e)}")
+        return []
 
 def keyword_based_categorization(text: str) -> List[str]:
     """Fallback categorization using keyword matching."""
@@ -120,7 +117,12 @@ def keyword_based_categorization(text: str) -> List[str]:
 
 async def categorize_article(text: str) -> List[str]:
     # Try Ollama first
-    prompt = f"Given the following news article, assign all relevant categories from this list: {', '.join(CATEGORIES)}. Return only a JSON array of category names.\n\nArticle:\n{text}\n\nCategories:"
+    prompt = (
+        f"Given the following news article, assign up to 3 categories from this list that are clearly and unambiguously relevant: "
+        f"[{', '.join(CATEGORIES)}]. Return only a JSON array of category names. "
+        f"Do not include any category unless it is obviously relevant. If none are clearly relevant, return an empty array.\n\n"
+        f"Article:\n{text}\n\nCategories:"
+    )
     try:
         async with httpx.AsyncClient() as client:
             print(f"Sending request to Ollama at {os.getenv('OLLAMA_URL')} with model {os.getenv('OLLAMA_MODEL')}")
@@ -151,9 +153,9 @@ async def categorize_article(text: str) -> List[str]:
             try:
                 categories = json.loads(match.group(0))
                 print(f"Parsed categories: {categories}")
-                # Filter out any categories that aren't in our predefined list
-                valid_categories = [cat for cat in categories if cat in CATEGORIES]
-                print(f"Valid categories: {valid_categories}")
+                # Filter out any categories that aren't in our predefined list and limit to 3
+                valid_categories = [cat for cat in categories if cat in CATEGORIES][:3]
+                print(f"Valid categories (max 3): {valid_categories}")
                 return valid_categories
             except json.JSONDecodeError as e:
                 print(f"Error parsing JSON from response: {e}")
@@ -233,21 +235,21 @@ def process_articles(self):
             print(f"Processing batch {i//BATCH_SIZE + 1} of {(len(fresh_articles) + BATCH_SIZE - 1)//BATCH_SIZE}")
             for fresh_article in batch:
                 try:
-                    article_link = fresh_article.get('alternate', [{}])[0].get('href', '')
+                    article_link = fresh_article.get('url', '')
                     if not article_link:
                         continue
                     existing_article = db.query(Article).filter(Article.link == article_link).first()
                     if existing_article and existing_article.is_processed:
                         continue
-                    print(f"Processing new article: {fresh_article['title']}")
+                    print(f"Processing new article: {fresh_article.get('title', '')}")
                     article_data = {
-                        'title': fresh_article['title'],
+                        'title': fresh_article.get('title', ''),
                         'link': article_link,
-                        'description': fresh_article.get('summary', {}).get('content', ''),
-                        'content': fresh_article.get('content', {}).get('content', ''),
-                        'source_name': fresh_article.get('origin', {}).get('title', ''),
-                        'source_url': fresh_article.get('origin', {}).get('htmlUrl', ''),
-                        'published_at': datetime.fromtimestamp(fresh_article.get('published', 0)),
+                        'description': fresh_article.get('content', ''),
+                        'content': fresh_article.get('content', ''),
+                        'source_name': fresh_article.get('author', ''),
+                        'source_url': '',
+                        'published_at': datetime.fromtimestamp(fresh_article.get('date', 0)),
                         'processed_at': datetime.utcnow(),
                         'is_processed': False
                     }
@@ -279,7 +281,8 @@ def process_articles(self):
                         print(f"Found {len(related)} related articles")
                     # Process thumbnail if needed
                     if not article.thumbnail_url:
-                        image_url = fresh_article.get('image', {}).get('url')
+                        enclosures = fresh_article.get('enclosures', [])
+                        image_url = enclosures[0]['url'] if enclosures and 'url' in enclosures[0] else ''
                         if image_url:
                             print(f"Generating thumbnail for: {article.title}")
                             thumbnail = loop.run_until_complete(generate_thumbnail(image_url))

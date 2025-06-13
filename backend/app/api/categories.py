@@ -29,3 +29,8 @@ async def batch_categories(article_ids: List[int], db: Session = Depends(get_db)
 
 # Categories are now included in the articles response
 # This file is kept for future use if needed 
+
+@router.get("/", summary="List all categories")
+def list_categories(db: Session = Depends(get_db)):
+    categories = db.query(Category).order_by(Category.name).all()
+    return {"categories": [cat.name for cat in categories]} 

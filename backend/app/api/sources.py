@@ -1,112 +1,71 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-import httpx
 import os
 from typing import List, Dict
 from app.database import get_db
 from app.models.database import Article
+from freshrss_api import FreshRSSAPI
+from loguru import logger
 
 router = APIRouter()
 
+def get_freshrss_client() -> FreshRSSAPI:
+    """Create and return a FreshRSS API client instance using environment variables."""
+    try:
+        # The client will automatically use the environment variables:
+        # FRESHRSS_PYTHON_API_HOST
+        # FRESHRSS_PYTHON_API_USERNAME
+        # FRESHRSS_PYTHON_API_PASSWORD
+        # FRESHRSS_PYTHON_API_VERIFY_SSL
+        client = FreshRSSAPI(verbose=True)  # Enable logging for debugging
+        return client
+    except Exception as e:
+        logger.error(f"Failed to initialize FreshRSS client: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to initialize FreshRSS client")
+
 @router.get("/")
 async def get_sources():
-    # Get FreshRSS credentials from environment
-    freshrss_url = os.getenv('FRESHRSS_URL')
-    freshrss_user = os.getenv('FRESHRSS_API_USER')
-    freshrss_password = os.getenv('FRESHRSS_API_PASSWORD')
-
-    if not all([freshrss_url, freshrss_user, freshrss_password]):
-        raise HTTPException(status_code=500, detail="FreshRSS credentials not configured")
-
-    # Login to get auth token
-    async with httpx.AsyncClient() as client:
-        login_url = f"{freshrss_url}/api/greader.php/accounts/ClientLogin"
-        login_data = {
-            "Email": freshrss_user,
-            "Passwd": freshrss_password
-        }
-        login_res = await client.post(login_url, data=login_data)
-        if login_res.status_code != 200:
-            raise HTTPException(status_code=500, detail="Failed to login to FreshRSS")
-        
-        auth_token = login_res.text.split('Auth=')[1].strip()
-
-        # Fetch subscriptions (sources)
-        subscriptions_url = f"{freshrss_url}/api/greader.php/reader/api/0/subscription/list"
-        headers = {"Authorization": f"GoogleLogin auth={auth_token}"}
-        res = await client.get(subscriptions_url, headers=headers)
-        
-        if res.status_code != 200:
-            raise HTTPException(status_code=500, detail="Failed to fetch from FreshRSS")
-
-        data = res.json()
-        sources = []
-        
-        if "subscriptions" in data:
-            for sub in data["subscriptions"]:
-                source = {
-                    "id": sub.get("id", ""),
-                    "title": sub.get("title", ""),
-                    "url": sub.get("htmlUrl", ""),
-                    "icon": sub.get("iconUrl", "")
-                }
-                sources.append(source)
-
+    """Get all RSS sources from FreshRSS."""
+    try:
+        client = get_freshrss_client()
+        feeds_response = client.get_feeds()
+        feeds = feeds_response["feeds"] if isinstance(feeds_response, dict) and "feeds" in feeds_response else feeds_response
+        sources = [
+            {
+                "id": str(feed["id"]),
+                "title": feed["title"],
+                "url": feed["url"],
+                "icon": feed.get("favicon_id")
+            }
+            for feed in feeds
+        ]
         return {"sources": sources}
+    except Exception as e:
+        logger.error(f"Failed to fetch feeds from FreshRSS: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch feeds from FreshRSS: {str(e)}")
 
 @router.get("/{source_id}/articles")
-async def get_source_articles(source_id: str, db: Session = Depends(get_db)):
-    # Get FreshRSS credentials from environment
-    freshrss_url = os.getenv('FRESHRSS_URL')
-    freshrss_user = os.getenv('FRESHRSS_API_USER')
-    freshrss_password = os.getenv('FRESHRSS_API_PASSWORD')
-
-    if not all([freshrss_url, freshrss_user, freshrss_password]):
-        raise HTTPException(status_code=500, detail="FreshRSS credentials not configured")
-
-    # Login to get auth token
-    async with httpx.AsyncClient() as client:
-        login_url = f"{freshrss_url}/api/greader.php/accounts/ClientLogin"
-        login_data = {
-            "Email": freshrss_user,
-            "Passwd": freshrss_password
-        }
-        login_res = await client.post(login_url, data=login_data)
-        if login_res.status_code != 200:
-            raise HTTPException(status_code=500, detail="Failed to login to FreshRSS")
-        
-        auth_token = login_res.text.split('Auth=')[1].strip()
-
-        # Fetch articles for the source
-        articles_url = f"{freshrss_url}/api/greader.php/reader/api/0/stream/contents/{source_id}"
-        headers = {"Authorization": f"GoogleLogin auth={auth_token}"}
-        res = await client.get(articles_url, headers=headers)
-        
-        if res.status_code != 200:
-            raise HTTPException(status_code=500, detail="Failed to fetch from FreshRSS")
-
-        data = res.json()
-        articles = []
-        
-        if "items" in data:
-            for item in data["items"]:
-                # Find the article in our database
-                article = db.query(Article).filter(
-                    Article.link == item.get("alternate", [{}])[0].get("href", "")
-                ).first()
-                
-                if article and article.is_processed:
-                    formatted_article = {
-                        "id": str(article.id),
-                        "title": article.title,
-                        "summary": {"content": article.description},
-                        "published": int(article.published_at.timestamp()) if article.published_at else 0,
-                        "origin": article.source_name,
-                        "url": article.link,
-                        "categories": [cat.name for cat in article.categories],
-                        "related": [str(rel.id) for rel in article.related_articles],
-                        "thumbnail_url": article.thumbnail_url or f"/thumbnails/{article.id}"
-                    }
-                    articles.append(formatted_article)
-
-        return {"articles": articles} 
+async def get_source_articles(source_id: str):
+    """Get articles for a specific source from FreshRSS."""
+    try:
+        client = get_freshrss_client()
+        # Get items for the specific feed
+        items = client.get_items_from_ids([int(source_id)])
+        articles = [
+            {
+                "id": str(item["id"]),
+                "title": item["title"],
+                "summary": {"content": item["content"]},
+                "published": int(item["created_on_time"]),
+                "origin": item.get("author"),
+                "url": item["url"],
+                "categories": item.get("categories", []),
+                "related": [],
+                "thumbnail_url": item.get("enclosure_url", "")
+            }
+            for item in items
+        ]
+        return {"articles": articles}
+    except Exception as e:
+        logger.error(f"Failed to fetch articles from FreshRSS: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch articles from FreshRSS: {str(e)}") 
