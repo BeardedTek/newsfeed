@@ -25,7 +25,7 @@ async def batch_related(article_ids: List[int], db: Session = Depends(get_db)):
         if article:
             results[str(article_id)] = [str(rel.id) for rel in article.related_articles]
     
-    return results
+    return results 
 
 # Related articles are now included in the articles response
 # This file is kept for future use if needed 

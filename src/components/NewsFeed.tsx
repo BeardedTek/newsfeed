@@ -172,6 +172,8 @@ interface Article {
   url?: string;
   categories?: string[];
   related?: string[];
+  thumbnail_url?: string;
+  image_url?: string;
 }
 
 interface NewsFeedProps {
@@ -278,17 +280,17 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
         const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`);
         const data = await response.json();
         
-        let items = (data.articles || []).sort((a: Article, b: Article) => {
-          return (b.published || 0) - (a.published || 0);
-        });
-        items = dedupeArticles(items).map(normalizeArticle);
-        setArticles(items);
+          let items = (data.articles || []).sort((a: Article, b: Article) => {
+            return (b.published || 0) - (a.published || 0);
+          });
+          items = dedupeArticles(items).map(normalizeArticle);
+          setArticles(items);
         setHasMore(items.length === BATCH_SIZE);
-        if (onSourceChange) onSourceChange('all');
+          if (onSourceChange) onSourceChange('all');
       } catch (error) {
         console.error('Error fetching initial articles:', error);
       } finally {
-        setLoading(false);
+          setLoading(false);
       }
     };
 
@@ -323,7 +325,7 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
   useEffect(() => {
     setShowSearch(!!searchParams?.has('q'));
   }, [searchParams, setShowSearch]);
-
+      
   // Fetch sources from /api/sources/ on mount
   useEffect(() => {
     const fetchSources = async () => {
@@ -366,7 +368,7 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
               />
             </form>
           </div>
-        )}
+          )}
         <div className="flex flex-col gap-2 px-4 sm:flex-row sm:items-center sm:gap-4">
           <Select
             value={selectedSource}
@@ -410,13 +412,18 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleArticles.map((article) => {
           const summary = stripHtmlAndTruncate(article.summary?.content || '', 50);
-          const thumbnail = extractThumbnail(article.summary?.content || '');
+          // Prefer thumbnail_url, then image_url, then fallback
+          const imageSrc = article.thumbnail_url
+            ? article.thumbnail_url
+            : article.image_url
+              ? article.image_url
+              : '/favicon.svg';
           return (
             <NewsCard
               key={article.id}
               article={article}
               summary={summary}
-              thumbnail={thumbnail}
+              thumbnail={imageSrc}
               related={article.related || []}
               categories={article.categories || []}
               onSourceClick={handleSourceClick}

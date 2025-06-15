@@ -1,9 +1,17 @@
 services:
   app:
     image: beardedtek/newsfeed:latest
+    restart: always
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_CASDOOR_SERVER_URL: ${NEXT_PUBLIC_CASDOOR_SERVER_URL}
+        NEXT_PUBLIC_CASDOOR_CLIENT_ID: ${NEXT_PUBLIC_CASDOOR_CLIENT_ID}
+        NEXT_PUBLIC_CASDOOR_CLIENT_SECRET: ${NEXT_PUBLIC_CASDOOR_CLIENT_SECRET}
+        NEXT_PUBLIC_CASDOOR_APP_NAME: ${NEXT_PUBLIC_CASDOOR_APP_NAME}
+        NEXT_PUBLIC_CASDOOR_ORG_NAME: ${NEXT_PUBLIC_CASDOOR_ORG_NAME}
+        NEXT_PUBLIC_CASDOOR_REDIRECT_URI: ${NEXT_PUBLIC_CASDOOR_REDIRECT_URI}
     env_file:
       - env/app
     depends_on:
@@ -11,10 +19,13 @@ services:
       - backend
     networks:
       - newsfeed
+      - casdoor
 
   backend:
     image: beardedtek/newsfeed-backend:latest
     restart: always
+    volumes:
+      - thumbnails:/thumbnails
     build:
       context: ./backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8001
@@ -24,6 +35,7 @@ services:
       - redis
     networks:
       - newsfeed
+      - casdoor
 
   nginx:
     image: nginx:latest
@@ -32,15 +44,15 @@ services:
       - "8880:80"
     volumes:
       - ./nginx/proxy.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - app
-      - backend
+      - thumbnails:/thumbnails:ro
     networks:
       - newsfeed
 
   worker:
     image: beardedtek/newsfeed-backend:latest
     restart: always
+    volumes:
+      - thumbnails:/thumbnails
     command: ["celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "--concurrency=2"]
     env_file:
       - env/backend
@@ -66,6 +78,8 @@ services:
   db:
     image: postgres:15-alpine
     restart: always
+    ports:
+      - "5432:5432"
     env_file:
       - env/backend
     volumes:
@@ -80,9 +94,43 @@ services:
     networks:
       - newsfeed
 
+
+  casdoor:
+    image: casbin/casdoor:latest
+    restart: always
+    environment:
+      - ALLOW_ORIGIN=*
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./casdoor/app.conf:/conf/app.conf
+      - ./casdoor/init_data.json:/conf/init_data.json
+    depends_on:
+      - casdoor-db
+    networks:
+      - newsfeed
+      - casdoor
+
+  casdoor-db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=casdoor
+    volumes:
+      - newsfeed_casdoor_postgres_data:/var/lib/postgresql/data
+    networks:
+      - casdoor
+
 networks:
   newsfeed:
+    external: true
+  casdoor:
     external: true
 
 volumes:
   postgres_data:
+  newsfeed_casdoor_postgres_data:
+    external: true
+  thumbnails:

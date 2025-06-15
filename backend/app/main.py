@@ -1,6 +1,8 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import articles, categories, related, thumbnails, sources
+from app.api import admin
+from app.api import auth
 from app.init_db import init_db
 
 app = FastAPI(title="NewsFeed Backend API")
@@ -26,6 +28,8 @@ api_router.include_router(categories.router, prefix="/categories", tags=["catego
 api_router.include_router(related.router, prefix="/related", tags=["related"])
 api_router.include_router(thumbnails.router, prefix="/thumbnails", tags=["thumbnails"])
 api_router.include_router(sources.router, prefix="/sources", tags=["sources"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 @api_router.get("/")
 async def root():

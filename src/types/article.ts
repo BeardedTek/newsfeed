@@ -6,6 +6,6 @@ export interface Article {
   published: number;
   origin: { title: string };
   categories: string[];
-  related: string[];
+  related: { id: string; title: string; url: string }[];
   thumbnail_url?: string;
 } 

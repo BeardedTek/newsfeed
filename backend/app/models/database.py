@@ -36,6 +36,7 @@ class Article(Base):
     published_at = Column(DateTime)
     processed_at = Column(DateTime, default=datetime.utcnow)
     is_processed = Column(Boolean, default=False)
+    image_url = Column(String(1000))
     
     # Relationships
     categories = relationship('Category', secondary=article_category, back_populates='articles')

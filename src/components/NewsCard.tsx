@@ -5,7 +5,7 @@ interface NewsCardProps {
   article: Article;
   summary: string;
   thumbnail: string | null;
-  related: Article[];
+  related: { id: string, title: string, url: string }[];
   categories: string[];
   onSourceClick: (source: string) => void;
 }
@@ -81,6 +81,25 @@ const NewsCard: React.FC<NewsCardProps> = ({ article, summary, thumbnail, relate
       </div>
       {/* Third row: Summary */}
       <p className="text-gray-700 dark:text-gray-300 text-sm mb-2 line-clamp-4">{summary}</p>
+      {/* Related articles */}
+      {related.length > 0 && (
+        <div className="mt-2">
+          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Related articles:</div>
+          <div className="flex flex-col gap-1">
+            {related.map((rel) => (
+              <a
+                key={rel.id}
+                href={rel.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-gray-900 dark:text-gray-200 hover:underline"
+              >
+                {rel.title}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
       {/* Fourth row: Categories */}
       <div className="flex flex-row flex-wrap gap-2 mt-auto">
         {categories && categories.length > 0 && categories.map((category: string) => (

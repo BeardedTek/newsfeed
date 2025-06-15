@@ -5,18 +5,16 @@ from typing import List, Dict, Any
 from app.database import get_db
 from app.models.database import Article, Category
 from app.models.article import Article as ArticleSchema
-from freshrss_api import FreshRSSAPI
-from loguru import logger
+from app.freshrss_api_ext import FreshRSSAPIExt
 
 router = APIRouter()
 
-def get_freshrss_client() -> FreshRSSAPI:
+def get_freshrss_client() -> FreshRSSAPIExt:
     """Create and return a FreshRSS API client instance using environment variables."""
     try:
-        client = FreshRSSAPI(verbose=True)  # Uses env vars
+        client = FreshRSSAPIExt(verbose=False)  # Uses env vars
         return client
     except Exception as e:
-        logger.error(f"Failed to initialize FreshRSS client: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to initialize FreshRSS client")
 
 @router.get("")
@@ -52,6 +50,12 @@ async def get_articles(
     # Format articles for response
     formatted_articles = []
     for article in articles:
+        # Determine thumbnail_url according to user rules
+        thumbnail_url = (
+            article.thumbnail_url if article.thumbnail_url else (
+                article.image_url if article.image_url else '/favicon.svg'
+            )
+        )
         formatted_article = {
             "id": str(article.id),
             "title": article.title,
@@ -60,8 +64,11 @@ async def get_articles(
             "origin": article.source_name,
             "url": article.link,
             "categories": [cat.name for cat in article.categories],
-            "related": [str(rel.id) for rel in article.related_articles],
-            "thumbnail_url": article.thumbnail_url or f"/thumbnails/{article.id}"
+            "related": [
+                {"id": str(rel.id), "title": rel.title, "url": rel.link}
+                for rel in article.related_articles
+            ],
+            "thumbnail_url": thumbnail_url
         }
         formatted_articles.append(formatted_article)
 
@@ -97,13 +104,20 @@ async def get_article(article_id: int, db: Session = Depends(get_db)):
                     "url": item["url"],
                     "categories": item.get("categories", []),
                     "related": [],
-                    "thumbnail_url": item.get("enclosure_url", "")
+                    "thumbnail_url": item.get("enclosure_url", ""),
+                    "image_url": item.get("enclosure_url", "")
                 }
             }
         except Exception as e:
-            logger.error(f"Failed to fetch article from FreshRSS: {str(e)}")
             raise HTTPException(status_code=404, detail="Article not found")
     
+    # Single article endpoint
+    # Determine thumbnail_url according to user rules
+    thumbnail_url = (
+        article.thumbnail_url if article.thumbnail_url else (
+            article.image_url if article.image_url else '/favicon.svg'
+        )
+    )
     return {
         "article": {
             "id": str(article.id),
@@ -114,7 +128,10 @@ async def get_article(article_id: int, db: Session = Depends(get_db)):
             "origin": article.source_name,
             "url": article.link,
             "categories": [cat.name for cat in article.categories],
-            "related": [str(rel.id) for rel in article.related_articles],
-            "thumbnail_url": article.thumbnail_url or f"/thumbnails/{article.id}"
+            "related": [
+                {"id": str(rel.id), "title": rel.title, "url": rel.link}
+                for rel in article.related_articles
+            ],
+            "thumbnail_url": thumbnail_url
         }
     } 

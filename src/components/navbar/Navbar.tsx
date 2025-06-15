@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { Navbar as FlowbiteNavbar, Button, TextInput } from 'flowbite-react';
-import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch, HiMenu } from 'react-icons/hi';
+import { useState, useEffect, Suspense, useRef } from 'react';
+import { Navbar as FlowbiteNavbar, Button, TextInput, Accordion } from 'flowbite-react';
+import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch, HiMenu, HiChevronDown, HiUserGroup, HiCollection, HiDatabase, HiCog, HiRefresh } from 'react-icons/hi';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSearchContext } from '@/context/SearchContext';
+import { useAuth } from '@/context/AuthContext';
 
 const GitHubLogo = ({ className = "" }) => (
   <svg viewBox="0 0 16 16" fill="currentColor" className={className} aria-hidden="true">
@@ -13,32 +14,18 @@ const GitHubLogo = ({ className = "" }) => (
   </svg>
 );
 
-const NAV_LINKS = [
-  {
-    href: '/about',
-    label: 'About',
-    icon: HiInformationCircle,
-    sr: 'About',
-  },
-  {
-    href: '/contact',
-    label: 'Contact',
-    icon: HiMail,
-    sr: 'Contact',
-  },
-  {
-    href: '/privacy',
-    label: 'Privacy',
-    icon: HiShieldCheck,
-    sr: 'Privacy Policy',
-  },
-  {
-    href: 'https://github.com/beardedtek/newsfeed',
-    label: 'newsfeed',
-    icon: GitHubLogo,
-    sr: 'GitHub',
-    external: true,
-  },
+const ABOUT_LINKS = [
+  { href: '/about', label: 'About NewsFeed', icon: HiInformationCircle },
+  { href: '/contact', label: 'Contact Us', icon: HiMail },
+  { href: 'https://github.com/beardedtek/newsfeed', label: 'Github', icon: GitHubLogo, external: true },
+];
+
+const ADMIN_LINKS = [
+  { href: '/admin', label: 'Dashboard', icon: HiUserGroup },
+  { href: '/admin/sources', label: 'Sources', icon: HiDatabase },
+  { href: '/admin/categories', label: 'Categories', icon: HiCollection },
+  { href: '/admin/related-articles', label: 'Related Articles', icon: HiCollection },
+  { href: '/admin/settings', label: 'Settings', icon: HiCog },
 ];
 
 export function NavbarContent() {
@@ -48,8 +35,8 @@ export function NavbarContent() {
       const stored = localStorage.getItem('theme');
       if (stored) return stored === 'dark';
       // Default to system preference
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
     return false;
   };
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
@@ -58,6 +45,34 @@ export function NavbarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  // Robust admin check for both string and object role shapes
+  const isAdmin = user?.roles?.some((role: any) => role.name === 'admin' || role === 'admin') || false;
+
+  // Dropdown open state for About and Admin
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const adminRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        aboutRef.current && !aboutRef.current.contains(event.target as Node) &&
+        adminRef.current && !adminRef.current.contains(event.target as Node)
+      ) {
+        setAboutOpen(false);
+        setAdminOpen(false);
+      } else if (aboutRef.current && !aboutRef.current.contains(event.target as Node)) {
+        setAboutOpen(false);
+      } else if (adminRef.current && !adminRef.current.contains(event.target as Node)) {
+        setAdminOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setShowSearch(!!searchParams?.has('q'));
@@ -77,8 +92,30 @@ export function NavbarContent() {
     }
   };
 
+  // Casdoor login redirect handler
+  const handleLogin = () => {
+    const serverUrl = process.env.NEXT_PUBLIC_CASDOOR_SERVER_URL ?? "";
+    const clientId = process.env.NEXT_PUBLIC_CASDOOR_CLIENT_ID ?? "";
+    const appName = process.env.NEXT_PUBLIC_CASDOOR_APP_NAME ?? "";
+    const orgName = process.env.NEXT_PUBLIC_CASDOOR_ORG_NAME ?? "";
+    const redirectUri = process.env.NEXT_PUBLIC_CASDOOR_REDIRECT_URI ?? "";
+
+    if (!serverUrl || !clientId || !appName || !orgName || !redirectUri) {
+      alert("Missing Casdoor environment variables. Please check your configuration.");
+      return;
+    }
+
+    // Add current path as a redirect param
+    const currentPath = window.location.pathname + window.location.search;
+    const authorizeUrl = `${serverUrl}/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid+profile+email&state=login&tenant=${encodeURIComponent(orgName)}&application=${encodeURIComponent(appName)}&redirect=${encodeURIComponent(currentPath)}`;
+    window.location.href = authorizeUrl;
+  };
+
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isNewsfeed = pathname === '/' && (!searchParams || searchParams.size === 0 || searchParams.has('q'));
+
   return (
-    <FlowbiteNavbar fluid className="sticky top-0 z-50 border-b relative">
+    <FlowbiteNavbar fluid className="sticky top-0 z-50 border-b bg-white dark:bg-gray-900">
       <FlowbiteNavbar.Brand href="/">
         <div className="flex flex-row items-center gap-3">
           {/* Column 1: Favicon */}
@@ -102,52 +139,136 @@ export function NavbarContent() {
         </button>
 
         {/* Desktop nav links */}
-        <div className="hidden md:flex items-center ml-10">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
-                link.href === '/search' ? 'cursor-pointer' : ''
-              }`}
-              onClick={link.href === '/search' ? (e) => { e.preventDefault(); toggleSearch(); } : undefined}
+        <div className="hidden md:flex items-center ml-10 gap-2">
+          {/* Search button styled as a nav link - only show on homepage or when searching */}
+          {isNewsfeed && (
+            <button
+              type="button"
+              aria-label="Toggle search bar"
+              onClick={toggleSearch}
+              className={`flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer ${showSearch ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              style={{ border: 'none', background: 'none' }}
             >
-              <link.icon className="w-5 h-5 md:mr-2" />
-              <span className="hidden md:inline">{link.label}</span>
-            </Link>
-          ))}
-          {/* Search button styled as a nav link */}
+              <HiSearch className="w-5 h-5 md:mr-2" />
+              <span className="hidden md:inline">Search</span>
+            </button>
+          )}
+          {/* About dropdown */}
+          <div className="relative ml-2" ref={aboutRef}>
+            <button
+              className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer"
+              onClick={() => {
+                setAboutOpen((open) => !open);
+                setAdminOpen(false);
+              }}
+              aria-haspopup="true"
+              aria-expanded={aboutOpen}
+            >
+              <HiInformationCircle className="w-5 h-5 md:mr-2" />
+              <span className="hidden md:inline">About</span>
+              <HiChevronDown className="w-4 h-4 ml-1" />
+            </button>
+            {aboutOpen && (
+              <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50">
+                {ABOUT_LINKS.map((link) => (
+                  link.external ? (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => setAboutOpen(false)}
+                    >
+                      {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                      {link.label}
+                    </Link>
+                  )
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Admin dropdown (if admin) */}
+          {isAdmin && (
+            <div className="relative ml-2" ref={adminRef}>
+              <button
+                className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer"
+                onClick={() => {
+                  setAdminOpen((open) => !open);
+                  setAboutOpen(false);
+                }}
+                aria-haspopup="true"
+                aria-expanded={adminOpen}
+              >
+                <HiUserGroup className="w-5 h-5 md:mr-2" />
+                <span className="hidden md:inline">Admin</span>
+                <HiChevronDown className="w-4 h-4 ml-1" />
+              </button>
+              {adminOpen && (
+                <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50">
+                  {ADMIN_LINKS.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => setAdminOpen(false)}
+                    >
+                      {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Login/Logout button for users */}
+          {!user ? (
+            <button
+              onClick={handleLogin}
+              className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
+              style={{ border: 'none', background: 'none' }}
+            >
+              <HiUserGroup className="w-5 h-5 md:mr-2" />
+              <span className="hidden md:inline">Login</span>
+            </button>
+          ) : (
+            <button
+              onClick={logout}
+              className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
+              style={{ border: 'none', background: 'none' }}
+            >
+              <HiUserGroup className="w-5 h-5 md:mr-2" />
+              <span className="hidden md:inline">Logout</span>
+            </button>
+          )}
+          {/* Light/Dark mode toggle button */}
           <button
             type="button"
-            aria-label="Toggle search bar"
-            onClick={toggleSearch}
-            className={`flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer ${showSearch ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+            aria-label="Toggle light/dark mode"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
             style={{ border: 'none', background: 'none' }}
           >
-            <HiSearch className="w-5 h-5 md:mr-2" />
-            <span className="hidden md:inline">Search</span>
+            {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
       {/* Mobile dropdown menu - direct child of navbar */}
       {mobileMenuOpen && (
-        <div className="relative w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-md md:hidden z-50 overflow-y-auto max-h-screen">
+        <div className="relative w-full bg-white dark:bg-gray-900 shadow-md md:hidden z-50 overflow-y-auto max-h-screen">
           <div className="flex flex-col py-2">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
-                  link.href === '/search' ? 'cursor-pointer' : ''
-                }`}
-                onClick={link.href === '/search' ? (e) => { e.preventDefault(); toggleSearch(); setMobileMenuOpen(false); } : () => setMobileMenuOpen(false)}
-              >
-                <link.icon className="w-5 h-5 mr-2" />
-                <span>{link.label}</span>
-              </Link>
-            ))}
-            {/* Search button styled as a nav link */}
+          {/* Search button only on homepage or when searching */}
+          {isNewsfeed && (
             <button
               type="button"
               aria-label="Toggle search bar"
@@ -158,6 +279,99 @@ export function NavbarContent() {
               <HiSearch className="w-5 h-5 mr-2" />
               <span>Search</span>
             </button>
+          )}
+          {/* Accordion panels for About and Admin */}
+          {(() => {
+            const mobilePanels = [
+              (
+                <Accordion.Panel key="about">
+                  <Accordion.Title className="px-4 justify-left text-left font-medium first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-800 flex items-center gap-2 px-0 py-3 text-gray-700 dark:text-gray-200 w-full">
+                    <h2 className="px-4 flex items-center gap-2">
+                      <HiInformationCircle className="w-5 h-5" />
+                      <span className="flex-1 text-left">About</span>
+                    </h2>
+                  </Accordion.Title>
+                  <Accordion.Content className="py-1 px-0">
+                    {ABOUT_LINKS.map((link) => (
+                      link.external ? (
+                        <a
+                          key={link.href}
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                          {link.label}
+                        </Link>
+                      )
+                    ))}
+                  </Accordion.Content>
+                </Accordion.Panel>
+              )
+            ];
+            if (isAdmin) {
+              mobilePanels.push(
+                <Accordion.Panel key="admin">
+                  <Accordion.Title className="px-4 justify-left text-left font-medium first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-800 flex items-center gap-2 px-0 py-3 text-gray-700 dark:text-gray-200 w-full">
+                    <h2 className="px-4 flex items-center gap-2">
+                      <HiUserGroup className="w-5 h-5" />
+                      <span className="flex-1 text-left">Admin</span>
+                    </h2>
+                  </Accordion.Title>
+                  <Accordion.Content className="py-1 px-0">
+                    {ADMIN_LINKS.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                        {link.label}
+                      </Link>
+                    ))}
+                  </Accordion.Content>
+                </Accordion.Panel>
+              );
+            }
+            return (
+              <Accordion collapseAll className="mb-0 border-0 rounded-none w-full">
+                {mobilePanels}
+              </Accordion>
+            );
+          })()}
+            {/* Login/Logout button for users (mobile) */}
+            {!user ? (
+              <button
+                onClick={handleLogin}
+                className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
+                style={{ border: 'none', background: 'none' }}
+              >
+                <HiUserGroup className="w-5 h-5 mr-2" />
+                <span>Login</span>
+              </button>
+            ) : (
+              <button
+                onClick={logout}
+                className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
+                style={{ border: 'none', background: 'none' }}
+              >
+                <HiUserGroup className="w-5 h-5 mr-2" />
+                <span>Logout</span>
+              </button>
+            )}
             {/* Mobile light/dark mode toggle */}
             <Button
               color="gray"
@@ -168,18 +382,8 @@ export function NavbarContent() {
               {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
             </Button>
           </div>
-        </div>
+      </div>
       )}
-
-      {/* Desktop light/dark mode toggle */}
-      <Button
-        color="gray"
-        pill
-        onClick={() => setIsDarkMode((prev) => !prev)}
-        className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 hidden md:inline-flex"
-      >
-        {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
-      </Button>
     </FlowbiteNavbar>
   );
 }

@@ -55,4 +55,11 @@ body {
 
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgb(107, 114, 128);
+}
+
+/* Make Flowbite Accordion headings flex for icon, label, and chevron alignment */
+.accordion-title > h2, .accordion-title h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 } 

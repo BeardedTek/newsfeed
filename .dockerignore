@@ -10,4 +10,6 @@ README.md
 Dockerfile
 docker-compose.yml
 postgres_data
-freshrss_data 
+freshrss_data
+.dev
+.vscode

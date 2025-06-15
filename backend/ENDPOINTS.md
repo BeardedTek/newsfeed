@@ -1,222 +1,265 @@
-# NewsFeed API Documentation
+# NewsFeed Backend API Documentation
 
-This document provides a comprehensive overview of all available API endpoints in the NewsFeed backend.
+---
 
-## Base URL
+## Table of Contents
 
-All endpoints are prefixed with `/api`
+- [Authentication & Roles](#authentication--roles)
+- [Articles](#articles)
+  - [List Articles](#list-articles)
+  - [Get Single Article](#get-single-article)
+- [Categories](#categories)
+  - [Get Article Categories](#get-article-categories)
+  - [Batch Get Categories](#batch-get-categories)
+  - [Admin: Add/Edit/Delete Category](#admin-addeditdelete-category)
+- [Related Articles](#related-articles)
+  - [Get Related Articles](#get-related-articles)
+  - [Batch Get Related Articles](#batch-get-related-articles)
+  - [Admin: Rebuild Related](#admin-rebuild-related)
+- [Thumbnails](#thumbnails)
+  - [Get Article Thumbnail](#get-article-thumbnail)
+  - [Batch Get Thumbnails](#batch-get-thumbnails)
+  - [Static Thumbnail Serving](#static-thumbnail-serving)
+- [Sources](#sources)
+  - [List Sources](#list-sources)
+  - [Get Source Articles](#get-source-articles)
+  - [Admin: Edit/Delete Source](#admin-editdelete-source)
+  - [Admin: Refresh/Clear Source](#admin-refreshclear-source)
+  - [Admin: Source Stats](#admin-source-stats)
+- [Admin: Settings & Workers](#admin-settings--workers)
+- [Auth Endpoints](#auth-endpoints)
+- [Error Responses](#error-responses)
 
-## Authentication
+---
 
-Some endpoints may require authentication using an `X-Auth-Key` header. The authentication is handled through Casdoor.
+## Authentication & Roles
+
+- Most endpoints are public, but admin endpoints require authentication via Casdoor and an `X-Auth-Key` header or session.
+- Roles: `admin`, `poweruser`, `user`
+
+---
 
 ## Articles
 
 ### List Articles
-- **Endpoint:** `GET /articles`
-- **Description:** Retrieves a paginated list of articles with optional filtering
+- **GET** `/api/articles`
+- **Description:** Paginated list of articles with optional filters.
 - **Query Parameters:**
-  - `skip` (int, optional): Number of articles to skip (default: 0)
-  - `limit` (int, optional): Maximum number of articles to return (default: 20, max: 100)
-  - `category` (string, optional): Filter by category name
-  - `source` (string, optional): Filter by source name
-  - `search` (string, optional): Search in title and description
-- **Response:**
-  ```json
-  {
-    "articles": [
-      {
-        "id": "string",
-        "title": "string",
-        "summary": "string",
-        "published": "timestamp",
-        "origin": "string",
-        "url": "string",
-        "categories": ["string"],
-        "related": ["string"],
-        "thumbnail_url": "string"
-      }
-    ],
-    "total": "integer",
-    "skip": "integer",
-    "limit": "integer"
-  }
-  ```
+  - `skip` (int): Offset (default: 0)
+  - `limit` (int): Max results (default: 20, max: 100)
+  - `category` (str): Filter by category
+  - `source` (str): Filter by source
+  - `search` (str): Search in title/description
+
+**Example:**
+```bash
+curl 'http://localhost:8000/api/articles?limit=5&category=US'
+```
+
+**Response:**
+```json
+{
+  "articles": [
+    {
+      "id": "1",
+      "title": "Title...",
+      "summary": "...",
+      "published": 1712345678,
+      "origin": "NY Times",
+      "url": "https://...",
+      "categories": ["US"],
+      "related": ["2"],
+      "thumbnail_url": "/thumbnails/1.webp"
+    }
+  ],
+  "total": 100,
+  "skip": 0,
+  "limit": 5
+}
+```
 
 ### Get Single Article
-- **Endpoint:** `GET /articles/{article_id}`
-- **Description:** Retrieves detailed information about a specific article
-- **Path Parameters:**
-  - `article_id` (int): ID of the article to retrieve
-- **Response:**
-  ```json
-  {
-    "article": {
-      "id": "string",
-      "title": "string",
-      "summary": "string",
-      "content": "string",
-      "published": "timestamp",
-      "origin": "string",
-      "url": "string",
-      "categories": ["string"],
-      "related": ["string"],
-      "thumbnail_url": "string"
-    }
+- **GET** `/api/articles/{article_id}`
+- **Description:** Get details for a specific article.
+
+**Example:**
+```bash
+curl 'http://localhost:8000/api/articles/1'
+```
+
+**Response:**
+```json
+{
+  "article": {
+    "id": "1",
+    "title": "Title...",
+    "summary": "...",
+    "content": "...",
+    "published": 1712345678,
+    "origin": "NY Times",
+    "url": "https://...",
+    "categories": ["US"],
+    "related": ["2"],
+    "thumbnail_url": "/thumbnails/1.webp"
   }
-  ```
+}
+```
+
+---
 
 ## Categories
 
 ### Get Article Categories
-- **Endpoint:** `GET /categories/{article_id}`
-- **Description:** Retrieves categories for a specific article
-- **Path Parameters:**
-  - `article_id` (int): ID of the article
-- **Response:**
-  ```json
-  {
-    "categories": ["string"]
-  }
-  ```
+- **GET** `/api/categories/{article_id}`
+- **Description:** Get categories for an article.
+
+**Example:**
+```bash
+curl 'http://localhost:8000/api/categories/1'
+```
+
+**Response:**
+```json
+{"categories": ["US", "Politics"]}
+```
 
 ### Batch Get Categories
-- **Endpoint:** `POST /categories/batch`
-- **Description:** Retrieves categories for multiple articles in a single request
-- **Request Body:**
-  ```json
-  {
-    "article_ids": [1, 2, 3]
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "1": {
-      "categories": ["string"]
-    },
-    "2": {
-      "categories": ["string"]
-    }
-  }
-  ```
+- **POST** `/api/categories/batch`
+- **Body:** `{ "article_ids": [1,2,3] }`
+
+**Example:**
+```bash
+curl -X POST 'http://localhost:8000/api/categories/batch' \
+  -H 'Content-Type: application/json' \
+  -d '{"article_ids": [1,2,3]}'
+```
+
+**Response:**
+```json
+{"1": {"categories": ["US"]}, "2": {"categories": ["World"]}}
+```
+
+### Admin: Add/Edit/Delete Category
+- **POST** `/api/admin/categories/` (add)
+- **PUT** `/api/admin/categories/{id}` (edit)
+- **DELETE** `/api/admin/categories/{id}` (delete)
+- **Auth:** `admin` or `poweruser`
+
+---
 
 ## Related Articles
 
 ### Get Related Articles
-- **Endpoint:** `GET /related/{article_id}`
-- **Description:** Retrieves related articles for a specific article
-- **Path Parameters:**
-  - `article_id` (int): ID of the article
-- **Response:**
-  ```json
-  {
-    "related": ["string"]
-  }
-  ```
+- **GET** `/api/related/{article_id}`
 
 ### Batch Get Related Articles
-- **Endpoint:** `POST /related/batch`
-- **Description:** Retrieves related articles for multiple articles in a single request
-- **Request Body:**
-  ```json
-  {
-    "article_ids": [1, 2, 3]
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "1": ["string"],
-    "2": ["string"]
-  }
-  ```
+- **POST** `/api/related/batch`
+- **Body:** `{ "article_ids": [1,2,3] }`
+
+### Admin: Rebuild Related
+- **POST** `/api/admin/related/rebuild`
+- **Auth:** `admin` or `poweruser`
+
+---
 
 ## Thumbnails
 
 ### Get Article Thumbnail
-- **Endpoint:** `GET /thumbnails/{article_id}`
-- **Description:** Retrieves the thumbnail URL for a specific article
-- **Path Parameters:**
-  - `article_id` (int): ID of the article
-- **Response:**
-  ```json
-  {
-    "thumbnail_url": "string"
-  }
-  ```
+- **GET** `/api/thumbnails/{article_id}`
 
 ### Batch Get Thumbnails
-- **Endpoint:** `POST /thumbnails/batch`
-- **Description:** Retrieves thumbnail URLs for multiple articles in a single request
-- **Request Body:**
-  ```json
-  {
-    "article_ids": [1, 2, 3]
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "1": "string",
-    "2": "string"
-  }
-  ```
+- **POST** `/api/thumbnails/batch`
+- **Body:** `{ "article_ids": [1,2,3] }`
+
+### Static Thumbnail Serving
+- **GET** `/thumbnails/{article_id}.webp`
+- **Description:** Served directly by nginx as a static file.
+
+**Example:**
+```html
+<img src="/thumbnails/1.webp" alt="Article Thumbnail" />
+```
+
+---
 
 ## Sources
 
 ### List Sources
-- **Endpoint:** `GET /sources`
-- **Description:** Retrieves a list of all available news sources
-- **Response:**
-  ```json
-  {
-    "sources": [
-      {
-        "id": "string",
-        "title": "string",
-        "url": "string",
-        "icon": "string"
-      }
-    ]
-  }
-  ```
+- **GET** `/api/sources`
 
 ### Get Source Articles
-- **Endpoint:** `GET /sources/{source_id}/articles`
-- **Description:** Retrieves articles from a specific source
-- **Path Parameters:**
-  - `source_id` (string): ID of the source
-- **Response:**
-  ```json
-  {
-    "articles": [
-      {
-        "id": "string",
-        "title": "string",
-        "summary": {
-          "content": "string"
-        },
-        "published": "timestamp",
-        "origin": "string",
-        "url": "string",
-        "categories": ["string"],
-        "related": ["string"],
-        "thumbnail_url": "string"
-      }
-    ]
-  }
-  ```
+- **GET** `/api/sources/{source_id}/articles`
+
+### Admin: Edit/Delete Source
+- **PUT** `/api/admin/sources/{id}`
+- **DELETE** `/api/admin/sources/{id}`
+
+### Admin: Refresh/Clear Source
+- **POST** `/api/admin/sources/{feed_id}/refresh`
+- **POST** `/api/admin/sources/{title}/clear`
+
+### Admin: Source Stats
+- **GET** `/api/admin/sources/{feed_id}/count`
+- **GET** `/api/admin/sources/stats/{feed_url}`
+
+---
+
+## Admin: Settings & Workers
+
+### Get/Update Settings
+- **GET** `/api/admin/settings/`
+- **PUT** `/api/admin/settings/`
+
+### Trigger Article Processing
+- **POST** `/api/admin/workers/process-articles`
+
+---
+
+## Auth Endpoints
+
+### Casdoor Token Proxy
+- **POST** `/api/auth/casdoor/token`
+- **Description:** Proxy to Casdoor for OAuth token exchange.
+
+### Get User Info
+- **GET** `/api/auth/get-user`
+
+---
 
 ## Error Responses
 
-All endpoints may return the following error responses:
-
-- `400 Bad Request`: Invalid request parameters
-- `401 Unauthorized`: Missing or invalid authentication
+All endpoints may return:
+- `400 Bad Request`: Invalid request
+- `401 Unauthorized`: Missing/invalid auth
 - `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server-side error
+- `500 Internal Server Error`: Server error
 
-## Rate Limiting
+**Error Example:**
+```json
+{"detail": "Article not found"}
+```
 
-Batch endpoints have a limit of 20 items per request. 
+---
+
+## Example Python Usage
+
+```python
+import requests
+
+# List articles
+resp = requests.get('http://localhost:8000/api/articles?limit=5')
+print(resp.json())
+
+# Get single article
+resp = requests.get('http://localhost:8000/api/articles/1')
+print(resp.json())
+
+# Get categories for an article
+resp = requests.get('http://localhost:8000/api/categories/1')
+print(resp.json())
+
+# Get a thumbnail (static)
+resp = requests.get('http://localhost:8000/thumbnails/1.webp')
+with open('thumb1.webp', 'wb') as f:
+    f.write(resp.content)
+``` 
