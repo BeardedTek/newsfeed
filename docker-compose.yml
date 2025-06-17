@@ -1,15 +1,25 @@
+version: '3.8'
+
 services:
 
   nginx:
-    image: nginx:latest
+    image: nginx:stable-alpine
     restart: always
     ports:
       - "8880:80"
     volumes:
-      - ./nginx/proxy.conf:/etc/nginx/nginx.conf
+      - ./nginx/proxy.conf:/etc/nginx/nginx.conf:ro
       - thumbnails:/thumbnails:ro
+    depends_on:
+      - frontend
+      - backend
     networks:
       - newsfeed
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     image: beardedtek/newsfeed:latest
@@ -27,11 +37,14 @@ services:
     env_file:
       - env/frontend
     depends_on:
-      - db
       - backend
     networks:
       - newsfeed
-      - casdoor
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     image: beardedtek/newsfeed-backend:latest
@@ -40,21 +53,27 @@ services:
       - thumbnails:/thumbnails
     build:
       context: ./backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 4
     env_file:
       - env/backend
     depends_on:
       - redis
+      - db
     networks:
       - newsfeed
       - casdoor
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   worker:
     image: beardedtek/newsfeed-backend:latest
     restart: always
     volumes:
       - thumbnails:/thumbnails
-    command: ["celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "--concurrency=2"]
+    command: ["celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "--concurrency=4"]
     env_file:
       - env/backend
     depends_on:
@@ -62,6 +81,11 @@ services:
       - backend
     networks:
       - newsfeed
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   beat:
     image: beardedtek/newsfeed-backend:latest
@@ -72,21 +96,33 @@ services:
     depends_on:
       - redis
       - worker
-      - backend
     networks:
       - newsfeed
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db:
     image: postgres:15-alpine
     restart: always
-    ports:
-      - "5432:5432"
     env_file:
       - env/backend
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - newsfeed
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -94,23 +130,35 @@ services:
     command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
     networks:
       - newsfeed
-
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   casdoor:
     image: casbin/casdoor:latest
     restart: always
     environment:
       - ALLOW_ORIGIN=*
-    ports:
-      - "8000:8000"
     volumes:
-      - ./casdoor/app.conf:/conf/app.conf
-      - ./casdoor/init_data.json:/conf/init_data.json
+      - ./casdoor/app.conf:/conf/app.conf:ro
+      - ./casdoor/init_data.json:/conf/init_data.json:ro
     depends_on:
       - casdoor-db
     networks:
       - newsfeed
       - casdoor
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   casdoor-db:
     image: postgres:15-alpine
@@ -123,6 +171,16 @@ services:
       - newsfeed_casdoor_postgres_data:/var/lib/postgresql/data
     networks:
       - casdoor
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   newsfeed:

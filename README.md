@@ -16,6 +16,19 @@ A modern news aggregation and personalization platform built with Next.js, FastA
 ## Demo
 [https://newsfeed.beardedtek.net](https://newsfeed.beardedtek.net)
 
+## Project Structure
+
+The project is organized into separate components:
+
+```
+newsfeed/
+├── frontend/        # Next.js frontend application
+├── backend/         # FastAPI backend application
+├── casdoor/         # Casdoor authentication service configuration
+├── nginx/           # Nginx reverse proxy configuration
+├── env/             # Environment variable files
+```
+
 ## Tech Stack
 
 ### Frontend
@@ -35,14 +48,13 @@ A modern news aggregation and personalization platform built with Next.js, FastA
 ### Infrastructure
 - Docker & Docker Compose
 - Nginx for reverse proxy
-- Traefik support (optional)
 
 ## Prerequisites
 
 - Docker and Docker Compose
 - Running FreshRSS Instance
 - Node.js 18+ (for local development)
-- Python 3.8+ (for local development)
+- Python 3.11+ (for local development)
 
 ## Quick Start
 
@@ -60,11 +72,22 @@ A modern news aggregation and personalization platform built with Next.js, FastA
       - Save this password for the next step
 
 3. Set up environment variables:
-      Edit `env/app`
+      Edit `env/frontend`
    ```
    # App configuration
    APP_URL=http://localhost:8880/
    APP_SECRET=asdfkle899839asdjlfiasdf08934
+   
+   # Contact Form
+   NEXT_PUBLIC_CONTACT_FORM_ACTION=https://formspree.io/f/your-form-id
+   
+   # Casdoor configuration
+   NEXT_PUBLIC_CASDOOR_SERVER_URL=http://localhost:8000
+   NEXT_PUBLIC_CASDOOR_CLIENT_ID=your-client-id
+   NEXT_PUBLIC_CASDOOR_CLIENT_SECRET=your-client-secret
+   NEXT_PUBLIC_CASDOOR_APP_NAME=newsfeed
+   NEXT_PUBLIC_CASDOOR_ORG_NAME=newsfeed
+   NEXT_PUBLIC_CASDOOR_REDIRECT_URI=http://localhost:8880/callback
    ```
 
    Edit `env/backend`
@@ -85,9 +108,10 @@ A modern news aggregation and personalization platform built with Next.js, FastA
    POSTGRES_HOST=db
    ```
 
-4. Create docker network
+4. Create docker networks
    ```bash
    docker network create newsfeed
+   docker network create casdoor
    ```
 
 5. Start the services:
@@ -104,6 +128,24 @@ A modern news aggregation and personalization platform built with Next.js, FastA
    - Frontend: http://localhost:8880
    - Backend API: http://localhost:8880/api
 
+## Production Deployment
+
+The docker-compose.yml file is configured for production use with:
+
+- Optimized service configurations
+- Proper logging with rotation
+- Health checks for database services
+- Improved performance settings
+- Proper dependency chains between services
+
+For production deployment:
+
+1. Update environment variables with production values
+2. Configure your external proxy server to forward traffic to the Nginx service
+3. Deploy using:
+   ```bash
+   docker-compose up -d
+   ```
 
 ## License
 
