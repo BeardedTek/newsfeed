@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>NewsFeed Documentation</title><link>/docs/</link><description>Recent content on NewsFeed Documentation</description><generator>Hugo</generator><language>en-us</language><atom:link href="/docs/index.xml" rel="self" type="application/rss+xml"/><item><title>Git Hooks</title><link>/docs/docs/deployment/git-hooks/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>/docs/docs/deployment/git-hooks/</guid><description>&lt;h1 id="git-hooks">
+ Git Hooks
+ &lt;a class="anchor" href="#git-hooks">#&lt;/a>
+&lt;/h1>
+&lt;p>NewsFeed includes Git hooks to automate certain tasks during development and deployment.&lt;/p>
+&lt;h2 id="available-hooks">
+ Available Hooks
+ &lt;a class="anchor" href="#available-hooks">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="pre-commit-hook">
+ Pre-commit Hook
+ &lt;a class="anchor" href="#pre-commit-hook">#&lt;/a>
+&lt;/h3>
+&lt;p>The pre-commit hook automatically rebuilds the documentation site when files in the &lt;code>docs/&lt;/code> or &lt;code>content/&lt;/code> directories are modified. This ensures that the documentation is always up-to-date with the latest changes.&lt;/p>
+&lt;h4 id="what-it-does">
+ What it does
+ &lt;a class="anchor" href="#what-it-does">#&lt;/a>
+&lt;/h4>
+&lt;p>When you commit changes that include modifications to files in the &lt;code>docs/&lt;/code> or &lt;code>content/&lt;/code> directories, the pre-commit hook:&lt;/p></description></item></channel></rss>

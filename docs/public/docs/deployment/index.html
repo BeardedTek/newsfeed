@@ -1,0 +1,129 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
+  Deployment Guides
+  #
+
+This section provides detailed information on deploying NewsFeed in various environments.
+
+  Docker Deployment
+  #
+
+NewsFeed is designed to be deployed using Docker and Docker Compose. The project includes a production-ready docker-compose.yml file.
+
+  Prerequisites
+  #
+
+
+Docker Engine (20.10+)
+Docker Compose (2.0+)
+At least 2GB of RAM
+At least 10GB of disk space
+
+
+  Basic Deployment Steps
+  #
+
+
+
+Clone the repository:
+git clone https://github.com/beardedtek/newsfeed.git
+cd newsfeed
+
+
+Set up environment variables:"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="/docs/docs/deployment/"><meta property="og:site_name" content="NewsFeed Documentation"><meta property="og:title" content="Deployment Guides"><meta property="og:description" content="Deployment Guides # This section provides detailed information on deploying NewsFeed in various environments.
+Docker Deployment # NewsFeed is designed to be deployed using Docker and Docker Compose. The project includes a production-ready docker-compose.yml file.
+Prerequisites # Docker Engine (20.10+) Docker Compose (2.0+) At least 2GB of RAM At least 10GB of disk space Basic Deployment Steps # Clone the repository:
+git clone https://github.com/beardedtek/newsfeed.git cd newsfeed Set up environment variables:"><meta property="og:locale" content="en_us"><meta property="og:type" content="website"><title>Deployment Guides | NewsFeed Documentation</title><link rel=icon href=/docs/favicon.png><link rel=manifest href=/docs/manifest.json><link rel=canonical href=/docs/docs/deployment/><link rel=stylesheet href=/docs/book.min.27c601ff251cc5c9796bb272aace960013cf351d0c28a7e1301487b32d4800ee.css><script defer src=/docs/fuse.min.js></script><script defer src=/docs/en.search.min.08eff323ad92e5804fc80f1efedd26516876d61f1e0ba11887b86d995e868bf8.js></script><link rel=alternate type=application/rss+xml href=/docs/docs/deployment/index.xml title="NewsFeed Documentation"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/docs/><img src=/docs/logo.png alt=Logo class=book-icon><span>NewsFeed Documentation</span></a></h2><div class="book-search hidden"><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><script>document.querySelector(".book-search").classList.remove("hidden")</script><ul><li><input type=checkbox id=section-1bd881b6f3674bdbe6a5832f365e2cc1 class=toggle>
+<label for=section-1bd881b6f3674bdbe6a5832f365e2cc1 class=flex><a href=/docs/docs/frontend/ class=flex-auto>Frontend Usage Guide</a></label><ul></ul></li><li><input type=checkbox id=section-e2abcc6bc653a4ad229e66aa778ea8ce class=toggle>
+<label for=section-e2abcc6bc653a4ad229e66aa778ea8ce class=flex><a href=/docs/docs/admin/ class=flex-auto>Admin Dashboard Guide</a></label><ul></ul></li><li><input type=checkbox id=section-89295e3ad87cd739e9ae7938c36f5572 class=toggle>
+<label for=section-89295e3ad87cd739e9ae7938c36f5572 class=flex><a href=/docs/docs/backend/ class=flex-auto>Backend API Documentation</a></label><ul></ul></li><li><input type=checkbox id=section-193dd47a9b08cf6c33639b07114fafa0 class=toggle>
+<label for=section-193dd47a9b08cf6c33639b07114fafa0 class=flex><a href=/docs/docs/worker/ class=flex-auto>Worker Tasks</a></label><ul></ul></li><li><input type=checkbox id=section-ded1921c1a8aa8969511130d8fba8cc0 class=toggle>
+<label for=section-ded1921c1a8aa8969511130d8fba8cc0 class=flex><a href=/docs/docs/authentication/ class=flex-auto>Authentication</a></label><ul></ul></li><li><input type=checkbox id=section-83334284bc70767f5442a76139afa498 class=toggle checked>
+<label for=section-83334284bc70767f5442a76139afa498 class=flex><a href=/docs/docs/deployment/ class="flex-auto active">Deployment Guides</a></label><ul><li><a href=/docs/docs/deployment/git-hooks/>Git Hooks</a></li></ul></li><li><input type=checkbox id=section-f665c998950cb6dbc3aa497165a99b48 class=toggle>
+<label for=section-f665c998950cb6dbc3aa497165a99b48 class=flex><a href=/docs/docs/platforms/ class=flex-auto>Platform-Specific Guides</a></label><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/docs/svg/menu.svg class=book-icon alt=Menu></label><h3>Deployment Guides</h3><label for=toc-control><img src=/docs/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#docker-deployment>Docker Deployment</a><ul><li><a href=#prerequisites>Prerequisites</a></li><li><a href=#basic-deployment-steps>Basic Deployment Steps</a></li><li><a href=#production-considerations>Production Considerations</a></li></ul></li><li><a href=#reverse-proxy-configuration>Reverse Proxy Configuration</a><ul><li><a href=#nginx>Nginx</a></li><li><a href=#traefik>Traefik</a></li><li><a href=#caddy>Caddy</a></li></ul></li><li><a href=#scaling>Scaling</a></li><li><a href=#backup-and-recovery>Backup and Recovery</a></li><li><a href=#upgrading>Upgrading</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=deployment-guides>Deployment Guides
+<a class=anchor href=#deployment-guides>#</a></h1><p>This section provides detailed information on deploying NewsFeed in various environments.</p><h2 id=docker-deployment>Docker Deployment
+<a class=anchor href=#docker-deployment>#</a></h2><p>NewsFeed is designed to be deployed using Docker and Docker Compose. The project includes a production-ready <code>docker-compose.yml</code> file.</p><h3 id=prerequisites>Prerequisites
+<a class=anchor href=#prerequisites>#</a></h3><ul><li>Docker Engine (20.10+)</li><li>Docker Compose (2.0+)</li><li>At least 2GB of RAM</li><li>At least 10GB of disk space</li></ul><h3 id=basic-deployment-steps>Basic Deployment Steps
+<a class=anchor href=#basic-deployment-steps>#</a></h3><ol><li><p>Clone the repository:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>git clone https://github.com/beardedtek/newsfeed.git
+</span></span><span style=display:flex><span>cd newsfeed
+</span></span></code></pre></div></li><li><p>Set up environment variables:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># Create environment files from examples</span>
+</span></span><span style=display:flex><span>cp env/frontend.example env/frontend
+</span></span><span style=display:flex><span>cp env/backend.example env/backend
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Edit the environment files with your configuration</span>
+</span></span><span style=display:flex><span>nano env/frontend
+</span></span><span style=display:flex><span>nano env/backend
+</span></span></code></pre></div></li><li><p>Create Docker networks:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker network create newsfeed
+</span></span><span style=display:flex><span>docker network create casdoor
+</span></span></code></pre></div></li><li><p>Start the services:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker-compose up -d
+</span></span></code></pre></div></li><li><p>Monitor the logs:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker-compose logs -f
+</span></span></code></pre></div></li></ol><h3 id=production-considerations>Production Considerations
+<a class=anchor href=#production-considerations>#</a></h3><p>For production deployments, consider the following:</p><ol><li><p><strong>Security</strong>:</p><ul><li>Use strong passwords for all services</li><li>Configure SSL/TLS for all external access</li><li>Restrict access to admin endpoints</li></ul></li><li><p><strong>Performance</strong>:</p><ul><li>Adjust worker concurrency based on available resources</li><li>Configure appropriate cache settings</li><li>Consider using a CDN for static assets</li></ul></li><li><p><strong>Reliability</strong>:</p><ul><li>Set up monitoring and alerting</li><li>Configure regular backups</li><li>Implement health checks</li></ul></li></ol><h2 id=reverse-proxy-configuration>Reverse Proxy Configuration
+<a class=anchor href=#reverse-proxy-configuration>#</a></h2><p>NewsFeed is designed to be deployed behind a reverse proxy. The following sections provide configuration examples for popular reverse proxies.</p><h3 id=nginx>Nginx
+<a class=anchor href=#nginx>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-nginx data-lang=nginx><span style=display:flex><span><span style=color:#66d9ef>server</span> {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>listen</span> <span style=color:#ae81ff>80</span>;
+</span></span><span style=display:flex><span>    <span style=color:#f92672>server_name</span> <span style=color:#e6db74>newsfeed.example.com</span>;
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e># Redirect HTTP to HTTPS
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#f92672>return</span> <span style=color:#ae81ff>301</span> <span style=color:#e6db74>https://</span>$host$request_uri;
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>server</span> {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>listen</span> <span style=color:#ae81ff>443</span> <span style=color:#e6db74>ssl</span> <span style=color:#e6db74>http2</span>;
+</span></span><span style=display:flex><span>    <span style=color:#f92672>server_name</span> <span style=color:#e6db74>newsfeed.example.com</span>;
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e># SSL configuration
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#f92672>ssl_certificate</span> <span style=color:#e6db74>/path/to/fullchain.pem</span>;
+</span></span><span style=display:flex><span>    <span style=color:#f92672>ssl_certificate_key</span> <span style=color:#e6db74>/path/to/privkey.pem</span>;
+</span></span><span style=display:flex><span>    <span style=color:#f92672>ssl_protocols</span> <span style=color:#e6db74>TLSv1.2</span> <span style=color:#e6db74>TLSv1.3</span>;
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e># Proxy to NewsFeed
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#f92672>location</span> <span style=color:#e6db74>/</span> {
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_pass</span> <span style=color:#e6db74>http://localhost:80</span>;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>Host</span> $host;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>X-Real-IP</span> $remote_addr;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>X-Forwarded-Proto</span> $scheme;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e># Documentation
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#f92672>location</span> <span style=color:#e6db74>/docs/</span> {
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_pass</span> <span style=color:#e6db74>http://localhost:80/docs/</span>;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>Host</span> $host;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>X-Real-IP</span> $remote_addr;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+</span></span><span style=display:flex><span>        <span style=color:#f92672>proxy_set_header</span> <span style=color:#e6db74>X-Forwarded-Proto</span> $scheme;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=traefik>Traefik
+<a class=anchor href=#traefik>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#75715e># docker-compose.override.yml</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>services</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>nginx</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>labels</span>:
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;traefik.enable=true&#34;</span>
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;traefik.http.routers.newsfeed.rule=Host(`newsfeed.example.com`)&#34;</span>
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;traefik.http.routers.newsfeed.entrypoints=websecure&#34;</span>
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;traefik.http.routers.newsfeed.tls.certresolver=myresolver&#34;</span>
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;traefik.http.services.newsfeed.loadbalancer.server.port=80&#34;</span>
+</span></span></code></pre></div><h3 id=caddy>Caddy
+<a class=anchor href=#caddy>#</a></h3><pre tabindex=0><code>newsfeed.example.com {
+    reverse_proxy /* localhost:80
+}
+</code></pre><h2 id=scaling>Scaling
+<a class=anchor href=#scaling>#</a></h2><p>For larger deployments, consider:</p><ol><li><p><strong>Horizontal Scaling</strong>:</p><ul><li>Add more worker containers</li><li>Use a load balancer for frontend/backend services</li></ul></li><li><p><strong>Database Scaling</strong>:</p><ul><li>Configure PostgreSQL replication</li><li>Consider using a managed database service</li></ul></li><li><p><strong>Cache Optimization</strong>:</p><ul><li>Increase Redis memory allocation</li><li>Implement distributed caching</li></ul></li></ol><h2 id=backup-and-recovery>Backup and Recovery
+<a class=anchor href=#backup-and-recovery>#</a></h2><p>To back up your NewsFeed instance:</p><ol><li><p><strong>Database Backup</strong>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker-compose exec db pg_dump -U postgres -d newsfeed &gt; backup.sql
+</span></span></code></pre></div></li><li><p><strong>Volume Backup</strong>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># Backup thumbnails</span>
+</span></span><span style=display:flex><span>tar -czvf thumbnails-backup.tar.gz /path/to/thumbnails/volume
+</span></span></code></pre></div></li><li><p><strong>Configuration Backup</strong>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># Backup environment files</span>
+</span></span><span style=display:flex><span>cp -r env/ env-backup/
+</span></span></code></pre></div></li></ol><p>To restore from backup:</p><ol><li><p><strong>Database Restore</strong>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>cat backup.sql | docker-compose exec -T db psql -U postgres -d newsfeed
+</span></span></code></pre></div></li><li><p><strong>Volume Restore</strong>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># Restore thumbnails</span>
+</span></span><span style=display:flex><span>tar -xzvf thumbnails-backup.tar.gz -C /path/to/restore/location
+</span></span></code></pre></div></li></ol><h2 id=upgrading>Upgrading
+<a class=anchor href=#upgrading>#</a></h2><p>To upgrade your NewsFeed instance:</p><ol><li><p>Pull the latest changes:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>git pull
+</span></span></code></pre></div></li><li><p>Rebuild and restart the services:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker-compose down
+</span></span><span style=display:flex><span>docker-compose build
+</span></span><span style=display:flex><span>docker-compose up -d
+</span></span></code></pre></div></li><li><p>Run any necessary migrations:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker-compose exec backend python -m app.init_db
+</span></span></code></pre></div></li></ol></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/beardedtek/newsfeed/edit/main/docs/content/docs/deployment/_index.md target=_blank rel=noopener><img src=/docs/svg/edit.svg class=book-icon alt>
+<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#docker-deployment>Docker Deployment</a><ul><li><a href=#prerequisites>Prerequisites</a></li><li><a href=#basic-deployment-steps>Basic Deployment Steps</a></li><li><a href=#production-considerations>Production Considerations</a></li></ul></li><li><a href=#reverse-proxy-configuration>Reverse Proxy Configuration</a><ul><li><a href=#nginx>Nginx</a></li><li><a href=#traefik>Traefik</a></li><li><a href=#caddy>Caddy</a></li></ul></li><li><a href=#scaling>Scaling</a></li><li><a href=#backup-and-recovery>Backup and Recovery</a></li><li><a href=#upgrading>Upgrading</a></li></ul></nav></div></aside></main></body></html>

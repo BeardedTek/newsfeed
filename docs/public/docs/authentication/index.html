@@ -1,0 +1,77 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
+  Authentication
+  #
+
+This section provides detailed information about the authentication system in NewsFeed.
+
+  Overview
+  #
+
+NewsFeed uses Casdoor for authentication and user management. Casdoor is an open-source Identity and Access Management (IAM) solution that provides:
+
+User authentication
+Single Sign-On (SSO)
+OAuth 2.0 support
+User management
+Role-based access control
+
+
+  Authentication Flow
+  #
+
+The authentication flow in NewsFeed works as follows:
+
+User clicks &ldquo;Login&rdquo; in the NewsFeed interface
+User is redirected to the Casdoor login page
+After successful authentication, Casdoor redirects back to NewsFeed with an authorization code
+NewsFeed exchanges the code for an access token
+The access token is stored in the browser and used for subsequent API requests
+
+
+  Backend Authentication
+  #
+
+The backend authenticates API requests using:"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="/docs/docs/authentication/"><meta property="og:site_name" content="NewsFeed Documentation"><meta property="og:title" content="Authentication"><meta property="og:description" content="Authentication # This section provides detailed information about the authentication system in NewsFeed.
+Overview # NewsFeed uses Casdoor for authentication and user management. Casdoor is an open-source Identity and Access Management (IAM) solution that provides:
+User authentication Single Sign-On (SSO) OAuth 2.0 support User management Role-based access control Authentication Flow # The authentication flow in NewsFeed works as follows:
+User clicks “Login” in the NewsFeed interface User is redirected to the Casdoor login page After successful authentication, Casdoor redirects back to NewsFeed with an authorization code NewsFeed exchanges the code for an access token The access token is stored in the browser and used for subsequent API requests Backend Authentication # The backend authenticates API requests using:"><meta property="og:locale" content="en_us"><meta property="og:type" content="website"><title>Authentication | NewsFeed Documentation</title><link rel=icon href=/docs/favicon.png><link rel=manifest href=/docs/manifest.json><link rel=canonical href=/docs/docs/authentication/><link rel=stylesheet href=/docs/book.min.27c601ff251cc5c9796bb272aace960013cf351d0c28a7e1301487b32d4800ee.css><script defer src=/docs/fuse.min.js></script><script defer src=/docs/en.search.min.08eff323ad92e5804fc80f1efedd26516876d61f1e0ba11887b86d995e868bf8.js></script><link rel=alternate type=application/rss+xml href=/docs/docs/authentication/index.xml title="NewsFeed Documentation"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/docs/><img src=/docs/logo.png alt=Logo class=book-icon><span>NewsFeed Documentation</span></a></h2><div class="book-search hidden"><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><script>document.querySelector(".book-search").classList.remove("hidden")</script><ul><li><input type=checkbox id=section-1bd881b6f3674bdbe6a5832f365e2cc1 class=toggle>
+<label for=section-1bd881b6f3674bdbe6a5832f365e2cc1 class=flex><a href=/docs/docs/frontend/ class=flex-auto>Frontend Usage Guide</a></label><ul></ul></li><li><input type=checkbox id=section-e2abcc6bc653a4ad229e66aa778ea8ce class=toggle>
+<label for=section-e2abcc6bc653a4ad229e66aa778ea8ce class=flex><a href=/docs/docs/admin/ class=flex-auto>Admin Dashboard Guide</a></label><ul></ul></li><li><input type=checkbox id=section-89295e3ad87cd739e9ae7938c36f5572 class=toggle>
+<label for=section-89295e3ad87cd739e9ae7938c36f5572 class=flex><a href=/docs/docs/backend/ class=flex-auto>Backend API Documentation</a></label><ul></ul></li><li><input type=checkbox id=section-193dd47a9b08cf6c33639b07114fafa0 class=toggle>
+<label for=section-193dd47a9b08cf6c33639b07114fafa0 class=flex><a href=/docs/docs/worker/ class=flex-auto>Worker Tasks</a></label><ul></ul></li><li><input type=checkbox id=section-ded1921c1a8aa8969511130d8fba8cc0 class=toggle checked>
+<label for=section-ded1921c1a8aa8969511130d8fba8cc0 class=flex><a href=/docs/docs/authentication/ class="flex-auto active">Authentication</a></label><ul></ul></li><li><input type=checkbox id=section-83334284bc70767f5442a76139afa498 class=toggle>
+<label for=section-83334284bc70767f5442a76139afa498 class=flex><a href=/docs/docs/deployment/ class=flex-auto>Deployment Guides</a></label><ul><li><a href=/docs/docs/deployment/git-hooks/>Git Hooks</a></li></ul></li><li><input type=checkbox id=section-f665c998950cb6dbc3aa497165a99b48 class=toggle>
+<label for=section-f665c998950cb6dbc3aa497165a99b48 class=flex><a href=/docs/docs/platforms/ class=flex-auto>Platform-Specific Guides</a></label><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/docs/svg/menu.svg class=book-icon alt=Menu></label><h3>Authentication</h3><label for=toc-control><img src=/docs/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#overview>Overview</a></li><li><a href=#authentication-flow>Authentication Flow</a></li><li><a href=#backend-authentication>Backend Authentication</a><ul><li><a href=#jwt-verification>JWT Verification</a></li></ul></li><li><a href=#configuration>Configuration</a><ul><li><a href=#casdoor-configuration>Casdoor Configuration</a></li><li><a href=#frontend-configuration>Frontend Configuration</a></li></ul></li><li><a href=#user-roles>User Roles</a><ul><li><a href=#role-based-access>Role-Based Access</a></li></ul></li><li><a href=#custom-authentication>Custom Authentication</a></li><li><a href=#troubleshooting>Troubleshooting</a><ul><li><a href=#invalid-token>Invalid Token</a></li><li><a href=#cors-issues>CORS Issues</a></li><li><a href=#casdoor-connection-issues>Casdoor Connection Issues</a></li></ul></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=authentication>Authentication
+<a class=anchor href=#authentication>#</a></h1><p>This section provides detailed information about the authentication system in NewsFeed.</p><h2 id=overview>Overview
+<a class=anchor href=#overview>#</a></h2><p>NewsFeed uses <a href=https://casdoor.org/>Casdoor</a> for authentication and user management. Casdoor is an open-source Identity and Access Management (IAM) solution that provides:</p><ul><li>User authentication</li><li>Single Sign-On (SSO)</li><li>OAuth 2.0 support</li><li>User management</li><li>Role-based access control</li></ul><h2 id=authentication-flow>Authentication Flow
+<a class=anchor href=#authentication-flow>#</a></h2><p>The authentication flow in NewsFeed works as follows:</p><ol><li>User clicks &ldquo;Login&rdquo; in the NewsFeed interface</li><li>User is redirected to the Casdoor login page</li><li>After successful authentication, Casdoor redirects back to NewsFeed with an authorization code</li><li>NewsFeed exchanges the code for an access token</li><li>The access token is stored in the browser and used for subsequent API requests</li></ol><h2 id=backend-authentication>Backend Authentication
+<a class=anchor href=#backend-authentication>#</a></h2><p>The backend authenticates API requests using:</p><ol><li>JWT token validation</li><li>Public key verification</li><li>Role-based access control</li></ol><h3 id=jwt-verification>JWT Verification
+<a class=anchor href=#jwt-verification>#</a></h3><p>The backend verifies JWT tokens by:</p><ol><li>Extracting the token from the Authorization header</li><li>Verifying the token signature using Casdoor&rsquo;s public key</li><li>Validating token claims (expiration, issuer, etc.)</li><li>Extracting user information from the token</li></ol><h2 id=configuration>Configuration
+<a class=anchor href=#configuration>#</a></h2><h3 id=casdoor-configuration>Casdoor Configuration
+<a class=anchor href=#casdoor-configuration>#</a></h3><p>Casdoor is configured through environment variables:</p><pre tabindex=0><code># Casdoor Configuration
+CASDOOR_ENDPOINT=http://casdoor:8000
+CASDOOR_CLIENT_ID=your-client-id
+CASDOOR_CLIENT_SECRET=your-client-secret
+CASDOOR_ORG=newsfeed
+CASDOOR_APP_NAME=newsfeed
+CASDOOR_CERT_PUBLIC_KEY=&#34;-----BEGIN PUBLIC KEY-----
+...
+-----END PUBLIC KEY-----&#34;
+</code></pre><h3 id=frontend-configuration>Frontend Configuration
+<a class=anchor href=#frontend-configuration>#</a></h3><p>The frontend is configured through environment variables:</p><pre tabindex=0><code># Casdoor configuration
+NEXT_PUBLIC_CASDOOR_SERVER_URL=http://localhost:8000
+NEXT_PUBLIC_CASDOOR_CLIENT_ID=your-client-id
+NEXT_PUBLIC_CASDOOR_CLIENT_SECRET=your-client-secret
+NEXT_PUBLIC_CASDOOR_APP_NAME=newsfeed
+NEXT_PUBLIC_CASDOOR_ORG_NAME=newsfeed
+NEXT_PUBLIC_CASDOOR_REDIRECT_URI=http://localhost:8880/callback
+</code></pre><h2 id=user-roles>User Roles
+<a class=anchor href=#user-roles>#</a></h2><p>NewsFeed supports the following user roles:</p><ol><li><strong>Anonymous</strong> - Unauthenticated users with limited access</li><li><strong>User</strong> - Standard authenticated users</li><li><strong>Admin</strong> - Users with administrative privileges</li></ol><h3 id=role-based-access>Role-Based Access
+<a class=anchor href=#role-based-access>#</a></h3><p>Different API endpoints have different access requirements:</p><ul><li>Public endpoints (no authentication required)</li><li>User endpoints (authentication required)</li><li>Admin endpoints (admin role required)</li></ul><h2 id=custom-authentication>Custom Authentication
+<a class=anchor href=#custom-authentication>#</a></h2><p>If you need to use a different authentication system:</p><ol><li>Modify the <code>auth.py</code> file in the backend</li><li>Update the <code>AuthContext.tsx</code> file in the frontend</li><li>Configure your authentication provider</li><li>Update the authentication flow</li></ol><h2 id=troubleshooting>Troubleshooting
+<a class=anchor href=#troubleshooting>#</a></h2><p>Common authentication issues:</p><h3 id=invalid-token>Invalid Token
+<a class=anchor href=#invalid-token>#</a></h3><p><strong>Symptoms:</strong> API requests fail with 401 Unauthorized</p><p><strong>Solutions:</strong></p><ul><li>Check that the token is being sent correctly</li><li>Verify token expiration</li><li>Ensure the public key is configured correctly</li></ul><h3 id=cors-issues>CORS Issues
+<a class=anchor href=#cors-issues>#</a></h3><p><strong>Symptoms:</strong> Authentication fails due to CORS errors</p><p><strong>Solutions:</strong></p><ul><li>Configure CORS settings in the backend</li><li>Ensure the redirect URI is configured correctly</li><li>Check browser console for specific CORS errors</li></ul><h3 id=casdoor-connection-issues>Casdoor Connection Issues
+<a class=anchor href=#casdoor-connection-issues>#</a></h3><p><strong>Symptoms:</strong> Unable to connect to Casdoor</p><p><strong>Solutions:</strong></p><ul><li>Verify Casdoor is running</li><li>Check network connectivity between services</li><li>Validate Casdoor configuration</li></ul></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/beardedtek/newsfeed/edit/main/docs/content/docs/authentication/_index.md target=_blank rel=noopener><img src=/docs/svg/edit.svg class=book-icon alt>
+<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#overview>Overview</a></li><li><a href=#authentication-flow>Authentication Flow</a></li><li><a href=#backend-authentication>Backend Authentication</a><ul><li><a href=#jwt-verification>JWT Verification</a></li></ul></li><li><a href=#configuration>Configuration</a><ul><li><a href=#casdoor-configuration>Casdoor Configuration</a></li><li><a href=#frontend-configuration>Frontend Configuration</a></li></ul></li><li><a href=#user-roles>User Roles</a><ul><li><a href=#role-based-access>Role-Based Access</a></li></ul></li><li><a href=#custom-authentication>Custom Authentication</a></li><li><a href=#troubleshooting>Troubleshooting</a><ul><li><a href=#invalid-token>Invalid Token</a></li><li><a href=#cors-issues>CORS Issues</a></li><li><a href=#casdoor-connection-issues>Casdoor Connection Issues</a></li></ul></li></ul></nav></div></aside></main></body></html>

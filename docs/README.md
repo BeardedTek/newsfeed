@@ -1,0 +1,56 @@
+# NewsFeed Documentation
+
+This directory contains the documentation website for the NewsFeed project. The documentation is built using [Hugo](https://gohugo.io/) with the [Hugo Book](https://github.com/alex-shpak/hugo-book) theme.
+
+## Development
+
+To run the documentation site locally for development:
+
+```bash
+# Using Docker
+docker run --rm -it -v $(pwd):/src -p 1313:1313 klakegg/hugo:0.101.0-ext-alpine server --buildDrafts --buildFuture --bind 0.0.0.0
+
+# Or using the docker-compose setup
+docker-compose up docs
+```
+
+Then visit http://localhost:1313 in your browser.
+
+## Building for Production
+
+To build the documentation for production:
+
+```bash
+# Using the build script
+./build.sh
+
+# Or manually
+docker run --rm -v $(pwd):/src klakegg/hugo:0.101.0-ext-alpine
+```
+
+The built site will be in the `public/` directory.
+
+## Structure
+
+- `content/` - Documentation content in Markdown format
+- `static/` - Static assets like images
+- `themes/` - Hugo themes
+- `hugo.toml` - Hugo configuration file
+
+## Adding Content
+
+To add new content:
+
+1. Create a new Markdown file in the appropriate directory under `content/docs/`
+2. Add front matter at the top of the file:
+   ```yaml
+   ---
+   title: "Page Title"
+   weight: 10
+   ---
+   ```
+3. Write your content in Markdown
+
+## Deployment
+
+The documentation is served by the Nginx container at the `/docs/` path. When the NewsFeed application is deployed, the documentation is automatically built and served. 
