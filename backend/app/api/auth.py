@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 import httpx
 import os
 from fastapi import Depends
+from app.api import debug_log
 
 router = APIRouter()
 
@@ -25,7 +26,8 @@ async def casdoor_token_proxy(request: Request):
                     "content": resp.text,
                 }
         except Exception as e:
-            return {"error": "proxy_exception", "message": str(e)}
+            debug_log(f"[ERROR] /api/auth/casdoor/token: str(e)")
+            return {"error": "proxy_exception", "message": "An internal error occurred."}
 
 @router.get("/get-user")
 def get_user(user=Depends(__import__('app.auth.casdoor', fromlist=['get_current_user']).get_current_user)):
