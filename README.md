@@ -43,14 +43,6 @@ cd docs
 ./build.sh
 ```
 
-### Git Hooks
-
-This project includes a Git pre-commit hook that automatically rebuilds the documentation when files in the `docs/` or `content/` directories are modified. To install the hooks:
-
-```bash
-./scripts/install-hooks.sh
-```
-
 For more information about the documentation, see [docs/README.md](docs/README.md).
 
 ## Tech Stack

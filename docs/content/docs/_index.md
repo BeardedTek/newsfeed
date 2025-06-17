@@ -6,26 +6,34 @@ title: "Documentation"
 
 # NewsFeed Documentation
 
-Welcome to the comprehensive documentation for NewsFeed. Use the navigation menu to explore different sections.
+Welcome to the NewsFeed documentation. This documentation provides information on how to use, deploy, and develop for the NewsFeed application.
+
+## Overview
+
+NewsFeed is a modern news aggregation and reading platform that provides a clean, fast interface for consuming news from various sources. It's built with a React frontend and a Python backend, with a focus on performance and usability.
+
+## Key Features
+
+- **News Aggregation**: Collect and display news from multiple sources
+- **Categorization**: Organize news by categories and topics
+- **Search**: Find articles by keywords or phrases
+- **User Authentication**: Secure login and user management
+- **Admin Interface**: Manage sources, categories, and settings
 
 ## Documentation Sections
 
-### User Guides
+- [Admin Documentation](/docs/admin/) - Managing the NewsFeed application
+- [Authentication](/docs/authentication/) - User authentication and authorization
+- [Backend](/docs/backend/) - API and server-side components
+- [Deployment](/docs/deployment/) - Deployment guides and configuration
+- [Frontend](/docs/frontend/) - User interface and client-side components
+- [Platforms](/docs/platforms/) - Platform-specific information
+- [Worker](/docs/worker/) - Background processing and scheduled tasks
 
-- [Frontend Usage Guide](/docs/frontend/) - Learn how to use the NewsFeed interface
-- [Admin Dashboard Guide](/docs/admin/) - Manage and configure your NewsFeed instance
+## Quick Links
 
-### Technical Documentation
-
-- [Backend API Documentation](/docs/backend/) - Explore the API endpoints
-- [Worker Tasks](/docs/worker/) - Learn about background processing
-- [Authentication](/docs/authentication/) - Understanding the authentication system
-
-### Deployment
-
-- [Deployment Guides](/docs/deployment/) - Deploy NewsFeed on various platforms
-- [Docker Optimizations](/docs/deployment/docker-optimizations/) - Production-ready container configurations
-- [Frontend Environment Variables](/docs/deployment/runtime-environment/) - Configure frontend without rebuilding
-- [Backend Environment Variables](/docs/deployment/backend-environment/) - Configure backend and worker services
-- [Git Hooks](/docs/deployment/git-hooks/) - Automated workflows for development
-- [Platform-Specific Guides](/docs/platforms/) - Instructions for specific platforms
+- [Backend Environment](/docs/deployment/backend-environment/) - Environment variables for the backend
+- [Docker Optimizations](/docs/deployment/docker-optimizations/) - Optimizing Docker builds and containers
+- [CI/CD](/docs/deployment/ci-cd/) - Continuous Integration and Deployment setup
+- [Nginx Configuration](/docs/deployment/nginx-configuration/) - Configuring the Nginx server
+- [Runtime Environment](/docs/deployment/runtime-environment/) - Runtime environment configuration

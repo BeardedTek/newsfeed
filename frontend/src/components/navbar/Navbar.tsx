@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { Navbar as FlowbiteNavbar, Button, TextInput, Accordion } from 'flowbite-react';
-import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch, HiMenu, HiChevronDown, HiUserGroup, HiCollection, HiDatabase, HiCog, HiRefresh } from 'react-icons/hi';
+import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch, HiMenu, HiChevronDown, HiUserGroup, HiCollection, HiDatabase, HiCog, HiRefresh, HiDocumentText } from 'react-icons/hi';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSearchContext } from '@/context/SearchContext';
@@ -17,6 +17,7 @@ const GitHubLogo = ({ className = "" }) => (
 const ABOUT_LINKS = [
   { href: '/about', label: 'About NewsFeed', icon: HiInformationCircle },
   { href: '/contact', label: 'Contact Us', icon: HiMail },
+  { href: '/docs/', label: 'Documentation', icon: HiDocumentText, external: true },
   { href: 'https://github.com/beardedtek/newsfeed', label: 'Github', icon: GitHubLogo, external: true },
 ];
 

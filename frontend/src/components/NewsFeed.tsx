@@ -265,63 +265,68 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
     <div className="dark:bg-gray-900 max-w-6xl mx-auto mt-0">
       {/* Top latest news row */}
       <div className="flex flex-col mb-6 w-full sticky top-16 z-40 bg-gray-50 dark:bg-gray-900">
-        {/* Search bar above filters */}
-        {showSearch && (
-          <div className="w-full mb-4 px-4">
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const form = e.target as HTMLFormElement;
-              const input = form.querySelector('input') as HTMLInputElement;
-              if (input.value.trim()) {
-                router.push(`/?q=${encodeURIComponent(input.value.trim())}`);
-              }
-            }}>
-              <TextInput
-                type="search"
-                placeholder="Search articles..."
-                defaultValue={query ?? ''}
-                icon={HiSearch}
-                className="w-full max-w-2xl mx-auto"
-              />
-            </form>
+        {/* Search and filters in one row */}
+        <div className="flex flex-col md:flex-row justify-between items-center px-4 gap-4 py-2">
+          {/* Search bar area - always takes up space even when hidden */}
+          <div className="w-full md:flex-1 md:mr-4">
+            {showSearch && (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const input = form.querySelector('input') as HTMLInputElement;
+                if (input.value.trim()) {
+                  router.push(`/?q=${encodeURIComponent(input.value.trim())}`);
+                }
+              }} className="w-full">
+                <TextInput
+                  type="search"
+                  placeholder="Search articles..."
+                  defaultValue={query ?? ''}
+                  icon={HiSearch}
+                  className="w-full"
+                />
+              </form>
+            )}
           </div>
-          )}
-        <div className="flex flex-col gap-2 px-4 sm:flex-row sm:items-center sm:gap-4">
-          <Select
-            value={selectedSource}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-              setSelectedSource(e.target.value);
-              // Update URL to reflect the source filter
-              const params = new URLSearchParams(searchParams?.toString() || '');
-              params.set('source', e.target.value);
-              router.push(`/?${params.toString()}`);
-            }}
-            className="w-full sm:max-w-2/5 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-          >
-            <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
-            {allSources.map(source => (
-              <option key={source.id} value={source.title} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source.title}</option>
-            ))}
-          </Select>
-          <Select
-            value={category || ''}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-              // Update URL to reflect the category filter
-              const params = new URLSearchParams(searchParams?.toString() || '');
-              if (e.target.value) {
-                params.set('category', e.target.value);
-              } else {
-                params.delete('category');
-              }
-              router.push(`/?${params.toString()}`);
-            }}
-            className="w-full sm:max-w-2/5 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-          >
-            <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
-            ))}
-          </Select>
+          
+          {/* Dropdowns - stacked in mobile, side by side in desktop */}
+          <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center w-full md:w-auto shrink-0">
+            <Select
+              value={selectedSource}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                setSelectedSource(e.target.value);
+                // Update URL to reflect the source filter
+                const params = new URLSearchParams(searchParams?.toString() || '');
+                params.set('source', e.target.value);
+                router.push(`/?${params.toString()}`);
+              }}
+              className="w-full md:w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+            >
+              <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
+              {allSources.map(source => (
+                <option key={source.id} value={source.title} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source.title}</option>
+              ))}
+            </Select>
+            <Select
+              value={category || ''}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                // Update URL to reflect the category filter
+                const params = new URLSearchParams(searchParams?.toString() || '');
+                if (e.target.value) {
+                  params.set('category', e.target.value);
+                } else {
+                  params.delete('category');
+                }
+                router.push(`/?${params.toString()}`);
+              }}
+              className="w-full md:w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
+            >
+              <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
+              ))}
+            </Select>
+          </div>
         </div>
       </div>
 

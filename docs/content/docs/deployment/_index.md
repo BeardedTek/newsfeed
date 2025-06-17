@@ -57,6 +57,5 @@ See the [Backend Environment](./backend-environment) page for more details on th
 ## Additional Resources
 
 - [Docker Optimizations](./docker-optimizations): Tips for optimizing Docker builds and containers
-- [Git Hooks](./git-hooks): Git hooks for development workflow
 - [Runtime Environment](./runtime-environment): Configuration of the runtime environment
 - [CI/CD](./ci-cd): Continuous Integration and Deployment setup
