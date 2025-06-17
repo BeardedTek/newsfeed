@@ -47,52 +47,52 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Option 1: Use our unified build script for all services
-      - name: Build and push all images
-        run: |
-          chmod +x ./build.sh
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            ./build.sh --push --debug
-          else
-            ./build.sh --debug
-          fi
+      # # Option 1: Use our unified build script for all services
+      # - name: Build and push all images
+      #   run: |
+      #     chmod +x ./build.sh
+      #     if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+      #       ./build.sh --push --debug
+      #     else
+      #       ./build.sh --debug
+      #     fi
 
       # Option 2: Build services separately (keeping this as a comment for reference)
-      # # Build and push nginx image using our custom build script
-      # - name: Build and push nginx image
-      #   run: |
-      #     chmod +x ./nginx/build-nginx.sh
-      #     if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-      #       ./nginx/build-nginx.sh --push
-      #     else
-      #       ./nginx/build-nginx.sh
-      #     fi
-      # 
-      # # Build and push frontend image
-      # - name: Build and push frontend image
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: ./frontend
-      #     file: ./frontend/Dockerfile
-      #     push: ${{ github.event_name != 'pull_request' }}
-      #     tags: |
-      #       ${{ env.FRONTEND_IMAGE_NAME }}:latest
-      #       ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}
-      #       ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
-      #     cache-from: type=gha
-      #     cache-to: type=gha,mode=max
-      # 
-      # # Build and push backend image
-      # - name: Build and push backend image
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: ./backend
-      #     file: ./backend/Dockerfile
-      #     target: production
-      #     push: ${{ github.event_name != 'pull_request' }}
-      #     tags: |
-      #       ${{ env.BACKEND_IMAGE_NAME }}:latest
-      #       ${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}
-      #       ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
-      #     cache-from: type=gha
-      #     cache-to: type=gha,mode=max 
+      # Build and push nginx image using our custom build script
+      - name: Build and push nginx image
+        run: |
+          chmod +x ./nginx/build-nginx.sh
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            ./nginx/build-nginx.sh --push
+          else
+            ./nginx/build-nginx.sh
+          fi
+      
+      # Build and push frontend image
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.FRONTEND_IMAGE_NAME }}:latest
+            ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      # Build and push backend image
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          target: production
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.BACKEND_IMAGE_NAME }}:latest
+            ${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max 
