@@ -8,6 +8,7 @@ set -e
 # Parse command line arguments
 DRY_RUN=false
 PUSH_IMAGES=false
+DEBUG=false
 
 for arg in "$@"; do
     case $arg in
@@ -17,11 +18,15 @@ for arg in "$@"; do
         --push)
             PUSH_IMAGES=true
             ;;
+        --debug)
+            DEBUG=true
+            ;;
         --help)
             echo "Usage: $0 [options]"
             echo "Options:"
             echo "  --dry-run    Build images but don't push them"
             echo "  --push       Push images to Docker Hub after building"
+            echo "  --debug      Enable debug output"
             echo "  --help       Show this help message"
             exit 0
             ;;
@@ -83,10 +88,31 @@ COMMIT_SHA=$(git rev-parse --short HEAD)
 
 echo "Building nginx image for branch: $BRANCH_NAME, commit: $COMMIT_SHA"
 
+# Debug information
+if [ "$DEBUG" = true ]; then
+    echo "Debug: Current directory: $(pwd)"
+    echo "Debug: Listing docs directory:"
+    ls -la docs/
+    echo "Debug: Environment variables:"
+    env | sort
+fi
+
 # Build the documentation
 echo "Building Hugo documentation..."
 cd docs
-./build.sh
+if ! ./build.sh; then
+    echo "Error: Documentation build failed."
+    # List the docs directory for debugging
+    echo "Contents of docs directory:"
+    ls -la
+    if [ -d "public" ]; then
+        echo "Contents of public directory:"
+        ls -la public/
+    else
+        echo "public directory does not exist."
+    fi
+    exit 1
+fi
 cd ..
 
 # Check if the documentation was built successfully
@@ -95,14 +121,36 @@ if [ ! -d "docs/public" ]; then
     exit 1
 fi
 
+# Debug information
+if [ "$DEBUG" = true ]; then
+    echo "Debug: Contents of docs/public directory:"
+    ls -la docs/public/
+fi
+
 echo "Documentation built successfully."
+
+# Create a temporary directory for the build context
+TEMP_DIR=$(mktemp -d)
+trap "rm -rf $TEMP_DIR" EXIT
+
+# Copy the necessary files to the temporary directory
+mkdir -p $TEMP_DIR/docs
+cp -r docs/public $TEMP_DIR/docs/
+cp -r nginx $TEMP_DIR/
+mkdir -p $TEMP_DIR/frontend/public
+cp -r frontend/public/favicon.ico $TEMP_DIR/frontend/public/
 
 # Build the nginx image
 echo "Building nginx image..."
 docker build -t "$NGINX_IMAGE_NAME:latest" \
              -t "$NGINX_IMAGE_NAME:$BRANCH_NAME" \
              -t "$NGINX_IMAGE_NAME:$COMMIT_SHA" \
-             -f nginx/Dockerfile .
+             -f nginx/Dockerfile $TEMP_DIR
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to build nginx image."
+    exit 1
+fi
 
 echo "Nginx image built successfully!"
 

@@ -32,6 +32,7 @@ NO_NGINX=false
 PUSH=false
 UP=false
 DETACHED=false
+DEBUG=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -56,9 +57,13 @@ while [[ $# -gt 0 ]]; do
             DETACHED=true
             shift
             ;;
+        --debug)
+            DEBUG=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--nginx-only] [--no-nginx] [--push] [--up] [-d]"
+            echo "Usage: $0 [--nginx-only] [--no-nginx] [--push] [--up] [-d] [--debug]"
             exit 1
             ;;
     esac
@@ -75,6 +80,9 @@ if ! $NO_NGINX; then
     NGINX_CMD="./nginx/build-nginx.sh"
     if $PUSH; then
         NGINX_CMD="$NGINX_CMD --push"
+    fi
+    if $DEBUG; then
+        NGINX_CMD="$NGINX_CMD --debug"
     fi
     echo "Building nginx image with command: $NGINX_CMD"
     eval "$NGINX_CMD"

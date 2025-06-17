@@ -52,9 +52,9 @@ jobs:
         run: |
           chmod +x ./build.sh
           if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            ./build.sh --push
+            ./build.sh --push --debug
           else
-            ./build.sh
+            ./build.sh --debug
           fi
 
       # Option 2: Build services separately (keeping this as a comment for reference)
