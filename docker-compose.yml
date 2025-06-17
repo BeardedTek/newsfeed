@@ -1,9 +1,21 @@
 services:
-  app:
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    ports:
+      - "8880:80"
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/nginx.conf
+      - thumbnails:/thumbnails:ro
+    networks:
+      - newsfeed
+
+  frontend:
     image: beardedtek/newsfeed:latest
     restart: always
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_CASDOOR_SERVER_URL: ${NEXT_PUBLIC_CASDOOR_SERVER_URL}
@@ -13,7 +25,7 @@ services:
         NEXT_PUBLIC_CASDOOR_ORG_NAME: ${NEXT_PUBLIC_CASDOOR_ORG_NAME}
         NEXT_PUBLIC_CASDOOR_REDIRECT_URI: ${NEXT_PUBLIC_CASDOOR_REDIRECT_URI}
     env_file:
-      - env/app
+      - env/frontend
     depends_on:
       - db
       - backend
@@ -36,17 +48,6 @@ services:
     networks:
       - newsfeed
       - casdoor
-
-  nginx:
-    image: nginx:latest
-    restart: always
-    ports:
-      - "8880:80"
-    volumes:
-      - ./nginx/proxy.conf:/etc/nginx/nginx.conf
-      - thumbnails:/thumbnails:ro
-    networks:
-      - newsfeed
 
   worker:
     image: beardedtek/newsfeed-backend:latest

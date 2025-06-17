@@ -5,6 +5,8 @@ import { Spinner, Badge, Select, TextInput } from 'flowbite-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { HiSearch } from 'react-icons/hi';
 import { useSearchContext } from '@/context/SearchContext';
+import NewsCard from './NewsCard';
+import { Article } from '@/types/article';
 
 const API_BASE = '/api';
 
@@ -79,101 +81,16 @@ function getCategories(text: string): string[] {
 function normalizeArticle(article: any): Article {
   return {
     ...article,
-    summary: typeof article.summary === 'string' ? { content: article.summary } : article.summary,
-    origin: typeof article.origin === 'string' ? { title: article.origin } : article.origin,
+    summary: typeof article.summary === 'string' 
+      ? { content: article.summary } 
+      : article.summary || { content: '' },
+    origin: typeof article.origin === 'string' 
+      ? { title: article.origin } 
+      : article.origin || { title: '' },
+    related: article.related || [],
+    categories: article.categories || [],
+    url: article.url || '',
   };
-}
-
-function NewsCard({ article, summary, thumbnail, related, categories, onSourceClick }: { 
-  article: Article, 
-  summary: string, 
-  thumbnail: string | null, 
-  related: string[],
-  categories: string[],
-  onSourceClick: (source: string) => void 
-}) {
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md p-3 max-w-2xl mb-4 flex flex-col h-full">
-      <div>
-        <div className="flex flex-row items-start gap-4">
-          {thumbnail && (
-            <img
-              src={thumbnail}
-              alt="thumbnail"
-              className="w-24 h-24 object-cover rounded flex-shrink-0 border border-gray-200 dark:border-gray-700"
-            />
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              {article.origin && (
-                <button
-                  onClick={() => onSourceClick(article.origin!.title)}
-                  className="hover:opacity-80 transition-opacity"
-                >
-                  <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-1 rounded mr-2">
-                    {article.origin.title}
-                  </span>
-                </button>
-              )}
-              <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatDate(article.published * 1000)}</span>
-            </div>
-            <a href={article.url || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline text-gray-900 dark:text-white">
-              <h2 className="text-lg font-semibold mb-1">{article.title}</h2>
-            </a>
-          </div>
-        </div>
-        <p className="text-gray-700 dark:text-gray-300 text-sm mt-2">{summary}</p>
-        {related.length > 0 && (
-          <div className="mt-2">
-            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Related articles:</div>
-            <div className="flex flex-col gap-1">
-              {related.map((relId) => (
-                <a
-                  key={relId}
-                  href={`/articles/${relId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-bold text-gray-900 dark:text-gray-200 hover:underline"
-                >
-                  {relId}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      {categories.length > 0 && (
-        <div className="flex flex-row flex-wrap gap-2 justify-end mt-auto pt-3">
-          {categories.map(cat => (
-            <a
-              key={cat}
-              href={`/?category=${cat.toLowerCase()}`}
-              className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            >
-              {cat}
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface Article {
-  id: string;
-  title: string;
-  summary?: {
-    content: string;
-  };
-  published: number;
-  origin?: {
-    title: string;
-  };
-  url?: string;
-  categories?: string[];
-  related?: string[];
-  thumbnail_url?: string;
-  image_url?: string;
 }
 
 interface NewsFeedProps {
@@ -412,12 +329,10 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleArticles.map((article) => {
           const summary = stripHtmlAndTruncate(article.summary?.content || '', 50);
-          // Prefer thumbnail_url, then image_url, then fallback
+          // Use thumbnail_url or fallback to default image
           const imageSrc = article.thumbnail_url
             ? article.thumbnail_url
-            : article.image_url
-              ? article.image_url
-              : '/favicon.svg';
+            : '/favicon.svg';
           return (
             <NewsCard
               key={article.id}

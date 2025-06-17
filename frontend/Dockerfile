@@ -29,7 +29,7 @@ ENV NEXT_PUBLIC_CASDOOR_REDIRECT_URI=$NEXT_PUBLIC_CASDOOR_REDIRECT_URI
 RUN npm run build
 
 # ---- Production Stage ----
-FROM node:20-alpine AS runner
+FROM node:22.16-alpine AS runner
 
 WORKDIR /app
 
