@@ -28,6 +28,7 @@ This section provides detailed information on deploying NewsFeed on specific pla
    - During installation, ensure WSL2 integration is enabled
 
 3. **Clone the Repository**:
+
    ```powershell
    # Using PowerShell
    git clone https://github.com/beardedtek/newsfeed.git
@@ -36,19 +37,23 @@ This section provides detailed information on deploying NewsFeed on specific pla
 
 4. **Configure Environment**:
    - Copy example environment files:
+
      ```powershell
      copy env\frontend.example env\frontend
      copy env\backend.example env\backend
      ```
+
    - Edit the files with your preferred text editor
 
 5. **Create Docker Networks**:
+
    ```powershell
    docker network create newsfeed
    docker network create casdoor
    ```
 
 6. **Start the Services**:
+
    ```powershell
    docker-compose up -d
    ```
@@ -77,6 +82,7 @@ This section provides detailed information on deploying NewsFeed on specific pla
    - For VM: Install Ubuntu 22.04 Server
 
 2. **Install Docker and Docker Compose**:
+
    ```bash
    # Update system
    apt update && apt upgrade -y
@@ -94,12 +100,14 @@ This section provides detailed information on deploying NewsFeed on specific pla
    ```
 
 3. **Clone the Repository**:
+
    ```bash
    git clone https://github.com/beardedtek/newsfeed.git
    cd newsfeed
    ```
 
 4. **Configure Environment**:
+
    ```bash
    cp env/frontend.example env/frontend
    cp env/backend.example env/backend
@@ -110,12 +118,14 @@ This section provides detailed information on deploying NewsFeed on specific pla
    ```
 
 5. **Create Docker Networks**:
+
    ```bash
    docker network create newsfeed
    docker network create casdoor
    ```
 
 6. **Start the Services**:
+
    ```bash
    docker-compose up -d
    ```
@@ -141,17 +151,20 @@ This section provides detailed information on deploying NewsFeed on specific pla
 
 2. **Create App Folder**:
    - Create a folder for NewsFeed in your appdata share:
+
      ```bash
      mkdir -p /mnt/user/appdata/newsfeed
      ```
 
 3. **Clone the Repository**:
+
    ```bash
    cd /mnt/user/appdata/newsfeed
    git clone https://github.com/beardedtek/newsfeed.git .
    ```
 
 4. **Configure Environment**:
+
    ```bash
    cp env/frontend.example env/frontend
    cp env/backend.example env/backend
@@ -162,12 +175,14 @@ This section provides detailed information on deploying NewsFeed on specific pla
    ```
 
 5. **Create Docker Networks**:
+
    ```bash
    docker network create newsfeed
    docker network create casdoor
    ```
 
 6. **Start the Services**:
+
    ```bash
    docker-compose up -d
    ```
@@ -199,28 +214,33 @@ This section provides detailed information on deploying NewsFeed on specific pla
    - Enable SSH and set a port
 
 3. **SSH into QNAP**:
+
    ```bash
    ssh admin@qnap-ip-address
    ```
 
 4. **Install Docker Compose**:
+
    ```bash
    curl -L "https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
    chmod +x /usr/local/bin/docker-compose
    ```
 
 5. **Create Project Directory**:
+
    ```bash
    mkdir -p /share/Container/newsfeed
    cd /share/Container/newsfeed
    ```
 
 6. **Clone the Repository**:
+
    ```bash
    git clone https://github.com/beardedtek/newsfeed.git .
    ```
 
 7. **Configure Environment**:
+
    ```bash
    cp env/frontend.example env/frontend
    cp env/backend.example env/backend
@@ -231,12 +251,14 @@ This section provides detailed information on deploying NewsFeed on specific pla
    ```
 
 8. **Create Docker Networks**:
+
    ```bash
    docker network create newsfeed
    docker network create casdoor
    ```
 
 9. **Start the Services**:
+
    ```bash
    docker-compose up -d
    ```
@@ -245,4 +267,4 @@ This section provides detailed information on deploying NewsFeed on specific pla
 
 - **Resource Limitations**: QNAP NAS devices may have limited resources. Monitor container performance.
 - **Persistence**: Store data on a volume that is included in your backup routine.
-- **Network Configuration**: Configure port forwarding in QNAP's network settings if you want to access NewsFeed from outside your network. 
+- **Network Configuration**: Configure port forwarding in QNAP's network settings if you want to access NewsFeed from outside your network.

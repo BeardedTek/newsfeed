@@ -2,13 +2,22 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Helper function to get environment variables at runtime
+const getEnvVar = (key: string): string => {
+  if (typeof window !== 'undefined' && window.ENV_CONFIG && window.ENV_CONFIG[key]) {
+    return window.ENV_CONFIG[key];
+  }
+  // Fallback to process.env during development or SSR
+  return process.env[key] || '';
+};
+
 const casdoorConfig = {
-  serverUrl: process.env.NEXT_PUBLIC_CASDOOR_SERVER_URL!,
-  clientId: process.env.NEXT_PUBLIC_CASDOOR_CLIENT_ID!,
-  clientSecret: process.env.NEXT_PUBLIC_CASDOOR_CLIENT_SECRET!,
-  organizationName: process.env.NEXT_PUBLIC_CASDOOR_ORG_NAME!,
-  appName: process.env.NEXT_PUBLIC_CASDOOR_APP_NAME!,
-  redirectPath: process.env.NEXT_PUBLIC_CASDOOR_REDIRECT_URI!,
+  serverUrl: getEnvVar('NEXT_PUBLIC_CASDOOR_SERVER_URL'),
+  clientId: getEnvVar('NEXT_PUBLIC_CASDOOR_CLIENT_ID'),
+  clientSecret: getEnvVar('NEXT_PUBLIC_CASDOOR_CLIENT_SECRET'),
+  organizationName: getEnvVar('NEXT_PUBLIC_CASDOOR_ORG_NAME'),
+  appName: getEnvVar('NEXT_PUBLIC_CASDOOR_APP_NAME'),
+  redirectPath: getEnvVar('NEXT_PUBLIC_CASDOOR_REDIRECT_URI'),
 };
 
 interface User {

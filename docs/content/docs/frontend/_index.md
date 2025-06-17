@@ -66,4 +66,4 @@ The NewsFeed interface is fully responsive and works on mobile devices:
 
 - Swipe left/right to navigate between sections
 - Tap article cards to open them
-- Use the hamburger menu to access navigation options 
+- Use the hamburger menu to access navigation options

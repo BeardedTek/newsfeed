@@ -35,4 +35,8 @@ api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 async def root():
     return {"status": "ok"}
 
+@api_router.get("/health")
+async def health():
+    return {"status": "healthy"}
+
 app.include_router(api_router) 

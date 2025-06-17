@@ -20,6 +20,7 @@ To authenticate:
 
 1. Obtain an access token from the Casdoor authentication endpoint
 2. Include the token in the `Authorization` header of your requests:
+
    ```
    Authorization: Bearer <your_token>
    ```
@@ -43,6 +44,7 @@ GET /api/articles
 ```
 
 Query parameters:
+
 - `page`: Page number (default: 1)
 - `limit`: Items per page (default: 20)
 - `category`: Filter by category
@@ -127,4 +129,4 @@ The API implements rate limiting to prevent abuse. Limits are:
 - 100 requests per minute for authenticated users
 - 20 requests per minute for unauthenticated users
 
-When rate limited, the API will return a 429 status code. 
+When rate limited, the API will return a 429 status code.

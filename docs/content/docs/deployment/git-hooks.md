@@ -39,6 +39,7 @@ To install the Git hooks:
 ```
 
 This script will:
+
 1. Create the `.git/hooks` directory if it doesn't exist
 2. Copy the pre-commit hook to the appropriate location
 3. Make the hook executable
@@ -75,11 +76,13 @@ However, this is not recommended as it may lead to inconsistent documentation.
 If the pre-commit hook is not running:
 
 1. Ensure the hook is executable:
+
    ```bash
    chmod +x .git/hooks/pre-commit
    ```
 
 2. Verify the hook is in the correct location:
+
    ```bash
    ls -la .git/hooks/pre-commit
    ```
@@ -89,10 +92,11 @@ If the pre-commit hook is not running:
 If the documentation build fails during the pre-commit hook:
 
 1. Run the build script manually to see the error:
+
    ```bash
    cd docs
    ./build.sh
    ```
 
 2. Fix any issues in the documentation
-3. Try committing again 
+3. Try committing again

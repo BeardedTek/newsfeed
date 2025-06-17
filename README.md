@@ -14,6 +14,7 @@ A modern news aggregation and personalization platform built with Next.js, FastA
 - PostgreSQL database for persistent storage
 
 ## Demo
+
 [https://newsfeed.beardedtek.net](https://newsfeed.beardedtek.net)
 
 ## Project Structure
@@ -33,7 +34,7 @@ newsfeed/
 
 ## Documentation
 
-The project includes comprehensive documentation built with Hugo. When the application is running, the documentation is available at `/docs/` (e.g., http://localhost/docs/).
+The project includes comprehensive documentation built with Hugo. When the application is running, the documentation is available at `/docs/` (e.g., <http://localhost/docs/>).
 
 To build the documentation:
 
@@ -55,6 +56,7 @@ For more information about the documentation, see [docs/README.md](docs/README.m
 ## Tech Stack
 
 ### Frontend
+
 - Next.js 14
 - React 18
 - Material-UI
@@ -62,6 +64,7 @@ For more information about the documentation, see [docs/README.md](docs/README.m
 - TypeScript
 
 ### Backend
+
 - FastAPI
 - Celery
 - Redis
@@ -69,6 +72,7 @@ For more information about the documentation, see [docs/README.md](docs/README.m
 - Docker
 
 ### Infrastructure
+
 - Docker & Docker Compose
 - Nginx for reverse proxy
 
@@ -82,6 +86,7 @@ For more information about the documentation, see [docs/README.md](docs/README.m
 ## Quick Start
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/newsfeed.git
    cd newsfeed
@@ -96,25 +101,29 @@ For more information about the documentation, see [docs/README.md](docs/README.m
 
 3. Set up environment variables:
       Edit `env/frontend`
+
    ```
    # App configuration
    APP_URL=http://localhost:8880/
    APP_SECRET=asdfkle899839asdjlfiasdf08934
    
    # Contact Form
-   NEXT_PUBLIC_CONTACT_FORM_ACTION=https://formspree.io/f/your-form-id
+   CONTACT_FORM_ACTION=https://formspree.io/f/your-form-id
    
    # Casdoor configuration
-   NEXT_PUBLIC_CASDOOR_SERVER_URL=http://localhost:8000
-   NEXT_PUBLIC_CASDOOR_CLIENT_ID=your-client-id
-   NEXT_PUBLIC_CASDOOR_CLIENT_SECRET=your-client-secret
-   NEXT_PUBLIC_CASDOOR_APP_NAME=newsfeed
-   NEXT_PUBLIC_CASDOOR_ORG_NAME=newsfeed
-   NEXT_PUBLIC_CASDOOR_REDIRECT_URI=http://localhost:8880/callback
+   CASDOOR_SERVER_URL=http://localhost:8000
+   CASDOOR_CLIENT_ID=your-client-id
+   CASDOOR_CLIENT_SECRET=your-client-secret
+   CASDOOR_APP_NAME=newsfeed
+   CASDOOR_ORG_NAME=newsfeed
+   CASDOOR_REDIRECT_URI=http://localhost:8880/callback
    ```
+
+   > **Note:** The frontend environment variables are automatically mapped to include the `NEXT_PUBLIC_` prefix at runtime, so you don't need to include it in your environment files.
 
    Edit `env/backend`
    Make sure you enter your own already running instance of FreshRSS.
+
    ```
    # Backend and worker configuration
    REDIS_URL=redis://redis:6379/0
@@ -146,33 +155,37 @@ For more information about the documentation, see [docs/README.md](docs/README.m
    ```
 
 4. Create docker networks
+
    ```bash
    docker network create newsfeed
    docker network create casdoor
    ```
 
 5. Start the services:
+
    ```bash
    docker-compose up --build
    ```
 
 6. View docker logs to make sure everything is working
+
    ```bash
    docker compose logs -f
    ```
 
 7. Access the application:
-   - Frontend: http://localhost:8880
-   - Backend API: http://localhost:8880/api
-   - Documentation: http://localhost:8880/docs
+   - Frontend: <http://localhost:8880>
+   - Backend API: <http://localhost:8880/api>
+   - Documentation: <http://localhost:8880/docs>
 
 ## Production Deployment
 
 The docker-compose.yml file is configured for production use with:
 
-- Optimized service configurations
+- Optimized service configurations with multi-stage Docker builds
+- Non-root user execution for improved security
+- Comprehensive health checks for all services
 - Proper logging with rotation
-- Health checks for database services
 - Improved performance settings
 - Proper dependency chains between services
 
@@ -181,6 +194,7 @@ For production deployment:
 1. Update environment variables with production values
 2. Configure your external proxy server to forward traffic to the Nginx service
 3. Deploy using:
+
    ```bash
    docker-compose up -d
    ```
@@ -191,4 +205,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-For support, please open an issue in the GitHub repository or email newsfeed@beardedtek.com
+For support, please open an issue in the GitHub repository or email <newsfeed@beardedtek.com>

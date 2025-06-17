@@ -14,7 +14,7 @@ docker run --rm -it -v $(pwd):/src -p 1313:1313 klakegg/hugo:0.101.0-ext-alpine 
 docker-compose up docs
 ```
 
-Then visit http://localhost:1313 in your browser.
+Then visit <http://localhost:1313> in your browser.
 
 ## Building for Production
 
@@ -43,14 +43,16 @@ To add new content:
 
 1. Create a new Markdown file in the appropriate directory under `content/docs/`
 2. Add front matter at the top of the file:
+
    ```yaml
    ---
    title: "Page Title"
    weight: 10
    ---
    ```
+
 3. Write your content in Markdown
 
 ## Deployment
 
-The documentation is served by the Nginx container at the `/docs/` path. When the NewsFeed application is deployed, the documentation is automatically built and served. 
+The documentation is served by the Nginx container at the `/docs/` path. When the NewsFeed application is deployed, the documentation is automatically built and served.

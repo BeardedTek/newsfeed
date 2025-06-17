@@ -1,3 +1,13 @@
 interface Window {
   plausible?: (...args: any[]) => void;
+  ENV_CONFIG: {
+    NEXT_PUBLIC_CASDOOR_SERVER_URL: string;
+    NEXT_PUBLIC_CASDOOR_CLIENT_ID: string;
+    NEXT_PUBLIC_CASDOOR_CLIENT_SECRET: string;
+    NEXT_PUBLIC_CASDOOR_APP_NAME: string;
+    NEXT_PUBLIC_CASDOOR_ORG_NAME: string;
+    NEXT_PUBLIC_CASDOOR_REDIRECT_URI: string;
+    NEXT_PUBLIC_CONTACT_FORM_ACTION: string;
+    [key: string]: string;
+  };
 } 

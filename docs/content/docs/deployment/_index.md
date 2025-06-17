@@ -10,7 +10,7 @@ This section provides detailed information on deploying NewsFeed in various envi
 
 ## Docker Deployment
 
-NewsFeed is designed to be deployed using Docker and Docker Compose. The project includes a production-ready `docker-compose.yml` file.
+NewsFeed is designed to be deployed using Docker and Docker Compose. The project includes a production-ready `docker-compose.yml` file with optimized container configurations. For detailed information about our Docker optimizations, see the [Docker Optimizations](./docker-optimizations/) page.
 
 ### Prerequisites
 
@@ -22,12 +22,14 @@ NewsFeed is designed to be deployed using Docker and Docker Compose. The project
 ### Basic Deployment Steps
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/beardedtek/newsfeed.git
    cd newsfeed
    ```
 
 2. Set up environment variables:
+
    ```bash
    # Create environment files from examples
    cp env/frontend.example env/frontend
@@ -39,17 +41,20 @@ NewsFeed is designed to be deployed using Docker and Docker Compose. The project
    ```
 
 3. Create Docker networks:
+
    ```bash
    docker network create newsfeed
    docker network create casdoor
    ```
 
 4. Start the services:
+
    ```bash
    docker-compose up -d
    ```
 
 5. Monitor the logs:
+
    ```bash
    docker-compose logs -f
    ```
@@ -72,6 +77,59 @@ For production deployments, consider the following:
    - Set up monitoring and alerting
    - Configure regular backups
    - Implement health checks
+
+## Continuous Integration and Deployment
+
+NewsFeed includes a GitHub Actions workflow for continuous integration and deployment. This workflow automatically builds and publishes Docker images for the NewsFeed application. For detailed information, see the [Continuous Integration and Deployment](./ci-cd/) page.
+
+### Pre-built Images
+
+You can use the pre-built Docker images from Docker Hub in your deployment:
+
+```yaml
+services:
+  nginx:
+    image: beardedtek/newsfeed-nginx:latest
+    # ...
+
+  frontend:
+    image: beardedtek/newsfeed:latest
+    # ...
+
+  backend:
+    image: beardedtek/newsfeed-backend:latest
+    # ...
+```
+
+## Nginx Configuration
+
+NewsFeed uses a custom Nginx container (`beardedtek/newsfeed-nginx:latest`) that is optimized for production use. This container:
+
+- Serves the documentation site at `/docs/`
+- Acts as a reverse proxy for the frontend and backend services
+- Includes performance optimizations for better response times
+- Automatically builds the documentation during image creation
+
+For detailed information about the Nginx configuration, see the [Nginx Configuration](./nginx-configuration/) page.
+
+### Building the Nginx Image
+
+The Nginx image uses a multi-stage build process to optimize size and performance:
+
+```bash
+# Build just the nginx image
+docker build -t beardedtek/newsfeed-nginx:latest -f nginx/Dockerfile .
+
+# Or build all services including nginx
+docker-compose build
+```
+
+### Key Features
+
+- **Multi-stage build**: Documentation is built in a separate stage
+- **Performance optimizations**: Increased worker connections, file descriptors, and TCP optimizations
+- **Security enhancements**: Runs as non-root user, includes security headers
+- **Health checks**: Automatic monitoring of service health
 
 ## Reverse Proxy Configuration
 
@@ -160,17 +218,20 @@ For larger deployments, consider:
 To back up your NewsFeed instance:
 
 1. **Database Backup**:
+
    ```bash
    docker-compose exec db pg_dump -U postgres -d newsfeed > backup.sql
    ```
 
 2. **Volume Backup**:
+
    ```bash
    # Backup thumbnails
    tar -czvf thumbnails-backup.tar.gz /path/to/thumbnails/volume
    ```
 
 3. **Configuration Backup**:
+
    ```bash
    # Backup environment files
    cp -r env/ env-backup/
@@ -179,11 +240,13 @@ To back up your NewsFeed instance:
 To restore from backup:
 
 1. **Database Restore**:
+
    ```bash
    cat backup.sql | docker-compose exec -T db psql -U postgres -d newsfeed
    ```
 
 2. **Volume Restore**:
+
    ```bash
    # Restore thumbnails
    tar -xzvf thumbnails-backup.tar.gz -C /path/to/restore/location
@@ -194,11 +257,13 @@ To restore from backup:
 To upgrade your NewsFeed instance:
 
 1. Pull the latest changes:
+
    ```bash
    git pull
    ```
 
 2. Rebuild and restart the services:
+
    ```bash
    docker-compose down
    docker-compose build
@@ -206,6 +271,7 @@ To upgrade your NewsFeed instance:
    ```
 
 3. Run any necessary migrations:
+
    ```bash
    docker-compose exec backend python -m app.init_db
-   ``` 
+   ```

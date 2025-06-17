@@ -4,9 +4,14 @@ title: "Admin Dashboard Guide"
 bookCollapseSection: true
 ---
 
+
 # Admin Dashboard Guide
 
 This section provides detailed information on how to use the NewsFeed admin dashboard to manage and configure your NewsFeed instance.
+
+## **NOTE: FEATURES MAY NOT BE COMPLETE**
+
+The features listed in this documentation may not be accurate.  THe admin console is currently being planned out and this document serves as a guide to what it ***should*** look like when it is complete.
 
 ## Accessing the Admin Dashboard
 

@@ -11,15 +11,21 @@ Welcome to the comprehensive documentation for NewsFeed. Use the navigation menu
 ## Documentation Sections
 
 ### User Guides
+
 - [Frontend Usage Guide](/docs/frontend/) - Learn how to use the NewsFeed interface
 - [Admin Dashboard Guide](/docs/admin/) - Manage and configure your NewsFeed instance
 
 ### Technical Documentation
+
 - [Backend API Documentation](/docs/backend/) - Explore the API endpoints
 - [Worker Tasks](/docs/worker/) - Learn about background processing
 - [Authentication](/docs/authentication/) - Understanding the authentication system
 
 ### Deployment
+
 - [Deployment Guides](/docs/deployment/) - Deploy NewsFeed on various platforms
+- [Docker Optimizations](/docs/deployment/docker-optimizations/) - Production-ready container configurations
+- [Frontend Environment Variables](/docs/deployment/runtime-environment/) - Configure frontend without rebuilding
+- [Backend Environment Variables](/docs/deployment/backend-environment/) - Configure backend and worker services
 - [Git Hooks](/docs/deployment/git-hooks/) - Automated workflows for development
-- [Platform-Specific Guides](/docs/platforms/) - Instructions for specific platforms 
+- [Platform-Specific Guides](/docs/platforms/) - Instructions for specific platforms

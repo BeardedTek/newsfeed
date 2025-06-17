@@ -111,6 +111,7 @@ Common authentication issues:
 **Symptoms:** API requests fail with 401 Unauthorized
 
 **Solutions:**
+
 - Check that the token is being sent correctly
 - Verify token expiration
 - Ensure the public key is configured correctly
@@ -120,6 +121,7 @@ Common authentication issues:
 **Symptoms:** Authentication fails due to CORS errors
 
 **Solutions:**
+
 - Configure CORS settings in the backend
 - Ensure the redirect URI is configured correctly
 - Check browser console for specific CORS errors
@@ -129,6 +131,7 @@ Common authentication issues:
 **Symptoms:** Unable to connect to Casdoor
 
 **Solutions:**
+
 - Verify Casdoor is running
 - Check network connectivity between services
-- Validate Casdoor configuration 
+- Validate Casdoor configuration

@@ -1,14 +1,16 @@
 services:
 
   nginx:
-    image: nginx:stable-alpine
+    image: beardedtek/newsfeed-nginx:latest
     restart: always
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+      target: production
     ports:
       - "8880:80"
     volumes:
-      - ./nginx/proxy.conf:/etc/nginx/nginx.conf:ro
       - thumbnails:/thumbnails:ro
-      - ./docs/public:/docs/public:ro
     depends_on:
       - frontend
       - backend
@@ -19,6 +21,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/docs/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
     image: beardedtek/newsfeed:latest
@@ -26,13 +34,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_CASDOOR_SERVER_URL: ${NEXT_PUBLIC_CASDOOR_SERVER_URL}
-        NEXT_PUBLIC_CASDOOR_CLIENT_ID: ${NEXT_PUBLIC_CASDOOR_CLIENT_ID}
-        NEXT_PUBLIC_CASDOOR_CLIENT_SECRET: ${NEXT_PUBLIC_CASDOOR_CLIENT_SECRET}
-        NEXT_PUBLIC_CASDOOR_APP_NAME: ${NEXT_PUBLIC_CASDOOR_APP_NAME}
-        NEXT_PUBLIC_CASDOOR_ORG_NAME: ${NEXT_PUBLIC_CASDOOR_ORG_NAME}
-        NEXT_PUBLIC_CASDOOR_REDIRECT_URI: ${NEXT_PUBLIC_CASDOOR_REDIRECT_URI}
     env_file:
       - env/frontend
     depends_on:
@@ -44,6 +45,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   backend:
     image: beardedtek/newsfeed-backend:latest
@@ -52,6 +59,8 @@ services:
       - thumbnails:/thumbnails
     build:
       context: ./backend
+      dockerfile: Dockerfile
+      target: production
     command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 4
     env_file:
       - env/backend
@@ -66,12 +75,22 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   worker:
     image: beardedtek/newsfeed-backend:latest
     restart: always
     volumes:
       - thumbnails:/thumbnails
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
     command: ["celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "--concurrency=4"]
     env_file:
       - env/backend
@@ -85,10 +104,20 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.workers.tasks", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   beat:
     image: beardedtek/newsfeed-backend:latest
     restart: always
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
     command: celery -A app.workers.tasks.celery_app beat --loglevel=info
     env_file:
       - env/backend

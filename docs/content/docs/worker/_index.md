@@ -59,6 +59,7 @@ The worker system can be configured using the following environment variables:
 **Task name:** `fetch_freshrss_articles`
 
 This task:
+
 1. Connects to the FreshRSS API
 2. Retrieves new articles since the last fetch
 3. Stores articles in the database
@@ -71,6 +72,7 @@ This task:
 **Task name:** `process_article_content`
 
 This task:
+
 1. Extracts the main content from the article HTML
 2. Generates a summary using AI
 3. Creates a thumbnail from the article's main image
@@ -83,6 +85,7 @@ This task:
 **Task name:** `generate_thumbnail`
 
 This task:
+
 1. Extracts images from the article
 2. Selects the best image for a thumbnail
 3. Resizes and optimizes the image
@@ -95,11 +98,13 @@ This task:
 **Task name:** `categorize_article`
 
 This task:
+
 1. Analyzes article content using AI
 2. Assigns categories based on content analysis
 3. Updates the article's category associations
 
 **Configuration:**
+
 - `OLLAMA_URL`: URL of the Ollama server
 - `OLLAMA_MODEL`: AI model to use for categorization
 
@@ -110,6 +115,7 @@ This task:
 **Task name:** `find_related_articles`
 
 This task:
+
 1. Analyzes the article content
 2. Compares it with other articles in the database
 3. Establishes relationships between similar articles
@@ -121,6 +127,7 @@ This task:
 **Task name:** `purge_old_articles`
 
 This task:
+
 1. Identifies articles older than the configured retention period
 2. Removes them from the database
 3. Deletes associated thumbnails
@@ -132,6 +139,7 @@ This task:
 **Task name:** `enrich_articles`
 
 This task:
+
 1. Finds articles with missing information (descriptions, images)
 2. Fetches and extracts content from the original article URLs
 3. Updates the articles with the enriched content
@@ -155,6 +163,7 @@ Common issues and solutions:
 **Symptoms:** Tasks are queuing up but not being processed
 
 **Solutions:**
+
 - Increase the number of worker processes
 - Check for errors in worker logs
 - Verify Redis connection
@@ -165,6 +174,7 @@ Common issues and solutions:
 **Symptoms:** Workers consuming excessive memory
 
 **Solutions:**
+
 - Reduce `WORKER_MAX_MEMORY_PER_CHILD` value
 - Implement task timeouts with `WORKER_TASK_TIME_LIMIT`
 - Split large tasks into smaller chunks
@@ -174,6 +184,7 @@ Common issues and solutions:
 **Symptoms:** Tasks consistently failing
 
 **Solutions:**
+
 - Check worker logs for errors
 - Verify external service connections (FreshRSS, Ollama)
-- Test tasks manually using the Celery command line 
+- Test tasks manually using the Celery command line

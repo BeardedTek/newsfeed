@@ -6,6 +6,7 @@ import Navbar from '@/components/navbar/Navbar';
 import PlausibleScript from "@/components/PlausibleScript";
 import { SearchProvider } from '@/context/SearchContext';
 import { AuthProvider } from '@/context/AuthContext';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,6 +35,7 @@ export default function RootLayout({
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
         <meta name="msapplication-TileColor" content="#2b5797" />
         <meta name="theme-color" content="#ffffff" />
+        <Script src="/env-config.js" strategy="beforeInteractive" />
         <script defer data-domain="newsfeed.beardedtek.net" src="https://plausible.beardedtek.org/js/script.file-downloads.hash.outbound-links.js"></script>
         <script>{`window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }`}</script>
       </head>
