@@ -3,10 +3,6 @@ services:
   nginx:
     image: beardedtek/newsfeed-nginx:latest
     restart: always
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
-      target: production
     ports:
       - "8880:80"
     volumes:
@@ -27,6 +23,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    labels:
+      - "com.beardedtek.newsfeed.custom-build=true"
 
   frontend:
     image: beardedtek/newsfeed:latest

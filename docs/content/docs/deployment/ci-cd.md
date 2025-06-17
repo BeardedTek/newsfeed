@@ -1,49 +1,69 @@
 ---
-weight: 48
-title: "Continuous Integration and Deployment"
+weight: 5
+title: "CI/CD"
 ---
 
 # Continuous Integration and Deployment
 
-NewsFeed uses GitHub Actions for continuous integration and deployment (CI/CD). This page documents the CI/CD process and how to use it.
+NewsFeed includes a GitHub Actions workflow for continuous integration and deployment. This workflow automatically builds and publishes Docker images for the NewsFeed application.
 
-## Docker Image Publishing
+## GitHub Actions Workflow
 
-The main CI/CD workflow builds and publishes Docker images for the NewsFeed application. These images are published to Docker Hub and can be used for deployment.
+The GitHub Actions workflow is defined in `.github/workflows/docker-build.yml` and performs the following tasks:
 
-### Images Published
+1. Builds the documentation using Hugo
+2. Builds the Docker images for all services
+3. Pushes the images to Docker Hub with appropriate tags
 
-The workflow builds and publishes the following Docker images:
+### Image Tags
 
-- `beardedtek/newsfeed-nginx` - The Nginx service with documentation
-- `beardedtek/newsfeed` - The frontend service
-- `beardedtek/newsfeed-backend` - The backend service
+The workflow generates the following tags for each image:
 
-### Tags
+- `latest`: Always points to the most recent build from the main branch
+- `<branch-name>`: The name of the branch that triggered the build
+- `<commit-sha>`: The first 7 characters of the commit SHA
 
-Each image is tagged with:
+### Docker Images
 
-- `:latest` - For the default branch (main)
-- `:<branch>` - The branch name (e.g., `main`, `develop`)
-- `:<commit>` - The short SHA of the commit
+The following Docker images are built and published:
 
-This allows you to use specific versions of the images in your deployment, or always use the latest version.
+- `beardedtek/newsfeed-nginx`: The Nginx container that serves the documentation and acts as a reverse proxy
+- `beardedtek/newsfeed`: The frontend Next.js application
+- `beardedtek/newsfeed-backend`: The backend FastAPI application (used for both the API and worker containers)
 
-## Workflow Triggers
+## Build Process
 
-The CI/CD workflow is triggered on:
+The build process uses the `build.sh` script at the project root, which provides a unified interface for building all services. For the nginx service, a custom build process is used via the `nginx/build-nginx.sh` script.
 
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop` branches
-- Push of version tags (e.g., `v1.0.0`)
+### Custom Nginx Build
 
-Images are only pushed to Docker Hub on push events, not on pull requests. This ensures that only approved changes are published.
+The nginx image requires a special build process because it includes the documentation site. The `nginx/build-nginx.sh` script:
 
-## Using the Published Images
+1. Builds the documentation using Hugo
+2. Builds the Docker image with the pre-built documentation
+3. Optionally pushes the image to Docker Hub
 
-To use the published images in your deployment, you can reference them in your `docker-compose.yml` file:
+## Local Development
+
+For local development, you can use the same build scripts:
+
+```bash
+# Build all images
+./build.sh
+
+# Build and start services
+./build.sh --up
+
+# Build and start services in detached mode
+./build.sh -d
+```
+
+## Production Deployment
+
+For production deployment, you can use the pre-built images from Docker Hub:
 
 ```yaml
+# In docker-compose.yml
 services:
   nginx:
     image: beardedtek/newsfeed-nginx:latest
@@ -58,13 +78,13 @@ services:
     # ...
 ```
 
-For production deployments, it's recommended to use a specific version tag instead of `latest`:
+For production environments, it's recommended to use specific version tags instead of `latest` to ensure consistency:
 
 ```yaml
 services:
   nginx:
     image: beardedtek/newsfeed-nginx:v1.0.0
-    # ...
+  # ...
 ```
 
 ## Setting Up CI/CD for Your Fork
