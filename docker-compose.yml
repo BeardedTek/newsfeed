@@ -10,6 +10,7 @@ services:
     volumes:
       - ./nginx/proxy.conf:/etc/nginx/nginx.conf:ro
       - thumbnails:/thumbnails:ro
+      - ./docs/public:/docs/public:ro
     depends_on:
       - frontend
       - backend

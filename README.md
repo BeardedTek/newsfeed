@@ -27,7 +27,30 @@ newsfeed/
 ├── casdoor/         # Casdoor authentication service configuration
 ├── nginx/           # Nginx reverse proxy configuration
 ├── env/             # Environment variable files
+├── docs/            # Documentation website
+└── utils/           # Utility scripts
 ```
+
+## Documentation
+
+The project includes comprehensive documentation built with Hugo. When the application is running, the documentation is available at `/docs/` (e.g., http://localhost/docs/).
+
+To build the documentation:
+
+```bash
+cd docs
+./build.sh
+```
+
+### Git Hooks
+
+This project includes a Git pre-commit hook that automatically rebuilds the documentation when files in the `docs/` or `content/` directories are modified. To install the hooks:
+
+```bash
+./scripts/install-hooks.sh
+```
+
+For more information about the documentation, see [docs/README.md](docs/README.md).
 
 ## Tech Stack
 
@@ -101,6 +124,20 @@ newsfeed/
    OLLAMA_URL=http://ollama:11434
    OLLAMA_MODEL=LLAMA3.2:3B
 
+   # Worker configuration
+   WORKER_PROCESS_ARTICLES_INTERVAL=15       # How often to process articles (in minutes)
+   WORKER_PURGE_OLD_ARTICLES_INTERVAL=1440   # How often to purge old articles (in minutes, default 24 hours)
+   WORKER_ENRICH_ARTICLES_INTERVAL=60        # How often to enrich articles (in minutes, default 1 hour)
+   WORKER_FRESHRSS_FETCH_LIMIT=100           # Maximum articles to fetch per batch
+   WORKER_CONCURRENT_FRESHRSS_FETCH_TASKS=1  # Number of concurrent fetch tasks
+   WORKER_FRESHRSS_FETCH_DAYS=3              # Number of days to fetch articles from
+   WORKER_FRESHRSS_PURGE_NUM_DAYS_TO_KEEP=7  # Number of days to keep articles before purging
+   WORKER_TASK_TIME_LIMIT=300                # Maximum time a task can run (in seconds)
+   WORKER_SOFT_TIME_LIMIT=240                # Soft time limit for tasks (in seconds)
+   WORKER_MAX_TASKS_PER_CHILD=100            # Maximum number of tasks a worker process can execute before being replaced
+   WORKER_MAX_MEMORY_PER_CHILD=200000        # Maximum memory usage (in KB) before worker is replaced
+   WORKER_PREFETCH_MULTIPLIER=1              # Number of tasks to prefetch per worker
+
    # Database configuration
    POSTGRES_USER=postgres
    POSTGRES_PASSWORD=postgres
@@ -127,6 +164,7 @@ newsfeed/
 7. Access the application:
    - Frontend: http://localhost:8880
    - Backend API: http://localhost:8880/api
+   - Documentation: http://localhost:8880/docs
 
 ## Production Deployment
 

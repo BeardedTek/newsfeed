@@ -29,13 +29,13 @@ from app.models.database import Article, Category
 celery_app = Celery('newsfeed', 
     broker=os.getenv('REDIS_URL', 'redis://redis:6379/0'),
     broker_connection_retry_on_startup=True,
-    worker_prefetch_multiplier=1,  # Process one task at a time
+    worker_prefetch_multiplier=int(os.environ.get('WORKER_PREFETCH_MULTIPLIER', 1)),  # Process one task at a time
     task_acks_late=True,  # Only acknowledge task after completion
     task_reject_on_worker_lost=True,  # Requeue task if worker dies
-    task_time_limit=300,  # 5 minute timeout
-    task_soft_time_limit=240,  # 4 minute soft timeout
-    worker_max_tasks_per_child=100,  # Restart worker after 100 tasks
-    worker_max_memory_per_child=200000  # Restart worker after 200MB memory usage
+    task_time_limit=int(os.environ.get('WORKER_TASK_TIME_LIMIT', 300)),  # 5 minute timeout
+    task_soft_time_limit=int(os.environ.get('WORKER_SOFT_TIME_LIMIT', 240)),  # 4 minute soft timeout
+    worker_max_tasks_per_child=int(os.environ.get('WORKER_MAX_TASKS_PER_CHILD', 100)),  # Restart worker after 100 tasks
+    worker_max_memory_per_child=int(os.environ.get('WORKER_MAX_MEMORY_PER_CHILD', 200000))  # Restart worker after 200MB memory usage
 )
 
 # Initialize Redis (only for Celery broker)
@@ -54,6 +54,11 @@ CONCURRENT_FETCH_TASKS = int(os.environ.get('WORKER_CONCURRENT_FRESHRSS_FETCH_TA
 FETCH_DAYS = int(os.environ.get('WORKER_FRESHRSS_FETCH_DAYS', 3))
 PURGE_NUM_DAYS_TO_KEEP = int(os.environ.get('WORKER_FRESHRSS_PURGE_NUM_DAYS_TO_KEEP', 7))
 fetch_semaphore = asyncio.Semaphore(CONCURRENT_FETCH_TASKS)
+
+# Task intervals in minutes
+PROCESS_ARTICLES_INTERVAL = int(os.environ.get('WORKER_PROCESS_ARTICLES_INTERVAL', 15))
+PURGE_OLD_ARTICLES_INTERVAL = int(os.environ.get('WORKER_PURGE_OLD_ARTICLES_INTERVAL', 1440))  # Default: 24 hours
+ENRICH_ARTICLES_INTERVAL = int(os.environ.get('WORKER_ENRICH_ARTICLES_INTERVAL', 60))  # Default: 1 hour
 
 CATEGORY_KEYWORDS = {
     'Politics': ['election', 'government', 'senate', 'congress', 'president', 'politics', 'law', 'policy', 'minister', 'parliament'],
@@ -344,26 +349,64 @@ def is_small_image(url, min_width=100, min_height=100):
 
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    # Run every 15 minutes using crontab for more precise scheduling
-    sender.add_periodic_task(
-        crontab(minute='*/15'),  # Every 15 minutes
-        process_articles.s(),
-        name='process_articles_every_15_minutes'
-    )
+    # Use environment variable for process_articles interval
+    if PROCESS_ARTICLES_INTERVAL % 60 == 0:
+        # If interval is in hours, schedule at the top of each hour
+        hours = PROCESS_ARTICLES_INTERVAL // 60
+        sender.add_periodic_task(
+            crontab(minute=0, hour=f'*/{hours}'),
+            process_articles.s(),
+            name=f'process_articles_every_{hours}_hours'
+        )
+    else:
+        # Otherwise schedule by minutes
+        sender.add_periodic_task(
+            crontab(minute=f'*/{PROCESS_ARTICLES_INTERVAL}'),
+            process_articles.s(),
+            name=f'process_articles_every_{PROCESS_ARTICLES_INTERVAL}_minutes'
+        )
     
-    # Run purge task daily at midnight
-    sender.add_periodic_task(
-        crontab(hour=0, minute=0),  # Every day at midnight
-        purge_old_articles.s(),
-        name='purge_old_articles_daily'
-    )
+    # Use environment variable for purge_old_articles interval
+    if PURGE_OLD_ARTICLES_INTERVAL % 1440 == 0:
+        # If interval is in days, schedule at midnight
+        days = PURGE_OLD_ARTICLES_INTERVAL // 1440
+        sender.add_periodic_task(
+            crontab(hour=0, minute=0, day_of_month=f'*/{days}'),
+            purge_old_articles.s(),
+            name=f'purge_old_articles_every_{days}_days'
+        )
+    elif PURGE_OLD_ARTICLES_INTERVAL % 60 == 0:
+        # If interval is in hours, schedule at the top of each hour
+        hours = PURGE_OLD_ARTICLES_INTERVAL // 60
+        sender.add_periodic_task(
+            crontab(minute=0, hour=f'*/{hours}'),
+            purge_old_articles.s(),
+            name=f'purge_old_articles_every_{hours}_hours'
+        )
+    else:
+        # Otherwise schedule by minutes
+        sender.add_periodic_task(
+            crontab(minute=f'*/{PURGE_OLD_ARTICLES_INTERVAL}'),
+            purge_old_articles.s(),
+            name=f'purge_old_articles_every_{PURGE_OLD_ARTICLES_INTERVAL}_minutes'
+        )
     
-    # Run enrichment task every hour
-    sender.add_periodic_task(
-        crontab(minute=0),  # Every hour
-        enrich_articles.s(),
-        name='enrich_articles_hourly'
-    )
+    # Use environment variable for enrich_articles interval
+    if ENRICH_ARTICLES_INTERVAL % 60 == 0:
+        # If interval is in hours, schedule at the top of each hour
+        hours = ENRICH_ARTICLES_INTERVAL // 60
+        sender.add_periodic_task(
+            crontab(minute=0, hour=f'*/{hours}'),
+            enrich_articles.s(),
+            name=f'enrich_articles_every_{hours}_hours'
+        )
+    else:
+        # Otherwise schedule by minutes
+        sender.add_periodic_task(
+            crontab(minute=f'*/{ENRICH_ARTICLES_INTERVAL}'),
+            enrich_articles.s(),
+            name=f'enrich_articles_every_{ENRICH_ARTICLES_INTERVAL}_minutes'
+        )
     
     # Also trigger the initial tasks
     process_articles.delay()
@@ -373,7 +416,9 @@ def setup_periodic_tasks(sender, **kwargs):
     bind=True,
     max_retries=3,
     default_retry_delay=60,  # 1 minute between retries
-    rate_limit='1/m'  # Maximum 1 task per minute
+    rate_limit='1/m',  # Maximum 1 task per minute
+    time_limit=int(os.environ.get('WORKER_TASK_TIME_LIMIT', 300)),
+    soft_time_limit=int(os.environ.get('WORKER_SOFT_TIME_LIMIT', 240))
 )
 def process_articles(self):
     debug_log('Starting process_articles task')
@@ -488,7 +533,9 @@ def process_articles(self):
     bind=True,
     max_retries=3,
     default_retry_delay=60,  # 1 minute between retries
-    rate_limit='1/m'  # Maximum 1 task per minute
+    rate_limit='1/m',  # Maximum 1 task per minute
+    time_limit=int(os.environ.get('WORKER_TASK_TIME_LIMIT', 300)),
+    soft_time_limit=int(os.environ.get('WORKER_SOFT_TIME_LIMIT', 240))
 )
 def purge_old_articles(self):
     debug_log('Starting purge_old_articles task')
@@ -521,7 +568,9 @@ def purge_old_articles(self):
     bind=True,
     max_retries=3,
     default_retry_delay=60,
-    rate_limit='1/m'
+    rate_limit='1/m',
+    time_limit=int(os.environ.get('WORKER_TASK_TIME_LIMIT', 300)),
+    soft_time_limit=int(os.environ.get('WORKER_SOFT_TIME_LIMIT', 240))
 )
 def enrich_articles(self):
     """Task to enrich articles that are missing summaries or images by scraping their URLs."""
