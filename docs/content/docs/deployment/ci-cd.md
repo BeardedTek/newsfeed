@@ -9,7 +9,7 @@ NewsFeed includes a GitHub Actions workflow for continuous integration and deplo
 
 ## GitHub Actions Workflow
 
-The GitHub Actions workflow is defined in `.github/workflows/docker-build.yml` and performs the following tasks:
+The GitHub Actions workflow is defined in `.github/workflows/docker-publish.yml` and performs the following tasks:
 
 1. Builds the documentation using Hugo
 2. Builds the Docker images for all services
@@ -33,7 +33,10 @@ The following Docker images are built and published:
 
 ## Build Process
 
-The build process uses the `build.sh` script at the project root, which provides a unified interface for building all services. For the nginx service, a custom build process is used via the `nginx/build-nginx.sh` script.
+The build process uses two main scripts:
+
+1. `build.sh` - A simplified script for local development that builds all services and starts them
+2. `nginx/build-nginx.sh` - A script that builds the nginx image with the documentation site
 
 ### Custom Nginx Build
 
@@ -41,21 +44,21 @@ The nginx image requires a special build process because it includes the documen
 
 1. Builds the documentation using Hugo
 2. Builds the Docker image with the pre-built documentation
-3. Optionally pushes the image to Docker Hub
+3. Optionally pushes the image to Docker Hub when the `--push` flag is provided
 
 ## Local Development
 
-For local development, you can use the same build scripts:
+For local development, use the simplified build script:
 
 ```bash
-# Build all images
+# Build all images and start services
 ./build.sh
-
-# Build and start services
-./build.sh --up
 
 # Build and start services in detached mode
 ./build.sh -d
+
+# Show debug output
+./build.sh --debug
 ```
 
 ## Production Deployment

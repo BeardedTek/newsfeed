@@ -6,15 +6,11 @@
 set -e
 
 # Parse command line arguments
-DRY_RUN=false
 PUSH_IMAGES=false
 DEBUG=false
 
 for arg in "$@"; do
     case $arg in
-        --dry-run)
-            DRY_RUN=true
-            ;;
         --push)
             PUSH_IMAGES=true
             ;;
@@ -24,7 +20,6 @@ for arg in "$@"; do
         --help)
             echo "Usage: $0 [options]"
             echo "Options:"
-            echo "  --dry-run    Build images but don't push them"
             echo "  --push       Push images to Docker Hub after building"
             echo "  --debug      Enable debug output"
             echo "  --help       Show this help message"
@@ -33,90 +28,30 @@ for arg in "$@"; do
     esac
 done
 
-# Function to find the project root directory
-find_project_root() {
-    # Start with the current directory
-    local dir=$(pwd)
-    
-    # Check if we're already in the project root
-    if [[ "$(basename "$dir")" == "newsfeed" && -d "$dir/docs" && -d "$dir/nginx" && -f "$dir/docker-compose.yml" ]]; then
-        echo "$dir"
-        return 0
-    fi
-    
-    # Check if we're in the nginx directory
-    if [[ "$(basename "$dir")" == "nginx" && -d "$dir/../docs" && -f "$dir/../docker-compose.yml" ]]; then
-        echo "$(cd "$dir/.." && pwd)"
-        return 0
-    fi
-    
-    # Check if we're in the docs directory
-    if [[ "$(basename "$dir")" == "docs" && -d "$dir/../nginx" && -f "$dir/../docker-compose.yml" ]]; then
-        echo "$(cd "$dir/.." && pwd)"
-        return 0
-    fi
-    
-    # Try to find the project root by going up directories
-    while [[ "$dir" != "/" ]]; do
-        if [[ "$(basename "$dir")" == "newsfeed" && -d "$dir/docs" && -d "$dir/nginx" && -f "$dir/docker-compose.yml" ]]; then
-            echo "$dir"
-            return 0
-        fi
-        dir=$(dirname "$dir")
-    done
-    
-    # If we get here, we couldn't find the project root
-    return 1
-}
-
-# Find the project root
-PROJECT_ROOT=$(find_project_root)
-if [[ $? -ne 0 ]]; then
-    echo "Error: Could not find project root directory."
-    echo "Please run this script from the project root or one of its subdirectories."
-    exit 1
-fi
-
-# Navigate to the project root
-cd "$PROJECT_ROOT"
-echo "Working from project root: $PROJECT_ROOT"
-
 # Set variables
 NGINX_IMAGE_NAME="beardedtek/newsfeed-nginx"
-BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-COMMIT_SHA=$(git rev-parse --short HEAD)
-
-echo "Building nginx image for branch: $BRANCH_NAME, commit: $COMMIT_SHA"
+CURRENT_DIR=$(pwd)
 
 # Debug information
 if [ "$DEBUG" = true ]; then
-    echo "Debug: Current directory: $(pwd)"
-    echo "Debug: Listing docs directory:"
-    ls -la docs/
+    echo "Debug: Current directory: $CURRENT_DIR"
     echo "Debug: Environment variables:"
     env | sort
 fi
 
+# Determine if we're in a GitHub Actions environment
+IN_GITHUB_ACTIONS=${GITHUB_ACTIONS:-false}
+
 # Build the documentation
 echo "Building Hugo documentation..."
-cd docs
+cd "$(dirname "$0")/../docs" || exit 1
 if ! ./build.sh; then
     echo "Error: Documentation build failed."
-    # List the docs directory for debugging
-    echo "Contents of docs directory:"
-    ls -la
-    if [ -d "public" ]; then
-        echo "Contents of public directory:"
-        ls -la public/
-    else
-        echo "public directory does not exist."
-    fi
     exit 1
 fi
-cd ..
 
 # Check if the documentation was built successfully
-if [ ! -d "docs/public" ]; then
+if [ ! -d "public" ]; then
     echo "Error: Documentation build failed. The 'docs/public' directory does not exist."
     exit 1
 fi
@@ -124,7 +59,7 @@ fi
 # Debug information
 if [ "$DEBUG" = true ]; then
     echo "Debug: Contents of docs/public directory:"
-    ls -la docs/public/
+    ls -la public/
 fi
 
 echo "Documentation built successfully."
@@ -135,17 +70,41 @@ trap "rm -rf $TEMP_DIR" EXIT
 
 # Copy the necessary files to the temporary directory
 mkdir -p $TEMP_DIR/docs
-cp -r docs/public $TEMP_DIR/docs/
+cp -r public $TEMP_DIR/docs/
+
+# Go back to the project root
+cd "$(dirname "$0")/.." || exit 1
+
+# Copy nginx files
 cp -r nginx $TEMP_DIR/
+
+# Copy favicon
 mkdir -p $TEMP_DIR/frontend/public
-cp -r frontend/public/favicon.ico $TEMP_DIR/frontend/public/
+cp -r frontend/public/favicon.ico $TEMP_DIR/frontend/public/ 2>/dev/null || echo "Warning: favicon.ico not found"
 
 # Build the nginx image
 echo "Building nginx image..."
-docker build -t "$NGINX_IMAGE_NAME:latest" \
-             -t "$NGINX_IMAGE_NAME:$BRANCH_NAME" \
-             -t "$NGINX_IMAGE_NAME:$COMMIT_SHA" \
-             -f nginx/Dockerfile $TEMP_DIR
+
+# Add tags based on environment
+TAGS="-t $NGINX_IMAGE_NAME:latest"
+
+if [ "$IN_GITHUB_ACTIONS" = "true" ]; then
+    # In GitHub Actions, add branch and commit tags
+    BRANCH_NAME=${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}
+    COMMIT_SHA=${GITHUB_SHA:-$(git rev-parse --short HEAD)}
+    
+    TAGS="$TAGS -t $NGINX_IMAGE_NAME:$BRANCH_NAME -t $NGINX_IMAGE_NAME:$COMMIT_SHA"
+    
+    if [ "$DEBUG" = true ]; then
+        echo "Debug: Building for GitHub Actions"
+        echo "Debug: Branch: $BRANCH_NAME"
+        echo "Debug: Commit: $COMMIT_SHA"
+    fi
+fi
+
+# Build the image
+echo "Running: docker build $TAGS -f nginx/Dockerfile $TEMP_DIR"
+docker build $TAGS -f nginx/Dockerfile $TEMP_DIR
 
 if [ $? -ne 0 ]; then
     echo "Error: Failed to build nginx image."
@@ -158,14 +117,13 @@ echo "Nginx image built successfully!"
 if [ "$PUSH_IMAGES" = true ]; then
     echo "Pushing images to Docker Hub..."
     docker push "$NGINX_IMAGE_NAME:latest"
-    docker push "$NGINX_IMAGE_NAME:$BRANCH_NAME"
-    docker push "$NGINX_IMAGE_NAME:$COMMIT_SHA"
+    
+    if [ "$IN_GITHUB_ACTIONS" = "true" ]; then
+        docker push "$NGINX_IMAGE_NAME:$BRANCH_NAME"
+        docker push "$NGINX_IMAGE_NAME:$COMMIT_SHA"
+    fi
+    
     echo "Images pushed successfully!"
-else
-    echo ""
-    echo "To push these images to Docker Hub, run:"
-    echo "  docker push $NGINX_IMAGE_NAME:latest"
-    echo "  docker push $NGINX_IMAGE_NAME:$BRANCH_NAME"
-    echo "  docker push $NGINX_IMAGE_NAME:$COMMIT_SHA"
-    echo "Or run this script with the --push flag"
-fi 
+fi
+
+exit 0 

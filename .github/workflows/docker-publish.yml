@@ -47,25 +47,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # # Option 1: Use our unified build script for all services
-      # - name: Build and push all images
-      #   run: |
-      #     chmod +x ./build.sh
-      #     if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-      #       ./build.sh --push --debug
-      #     else
-      #       ./build.sh --debug
-      #     fi
-
-      # Option 2: Build services separately (keeping this as a comment for reference)
-      # Build and push nginx image using our custom build script
       - name: Build and push nginx image
         run: |
           chmod +x ./nginx/build-nginx.sh
           if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            ./nginx/build-nginx.sh --push
+            ./nginx/build-nginx.sh --push --debug
           else
-            ./nginx/build-nginx.sh
+            ./nginx/build-nginx.sh --debug
           fi
       
       # Build and push frontend image

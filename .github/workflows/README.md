@@ -1,67 +1,54 @@
-# Docker Publish Workflow
+# GitHub Actions Workflows
 
-This GitHub Actions workflow automatically builds and publishes Docker images for the NewsFeed application.
+This directory contains GitHub Actions workflows for the NewsFeed application.
 
-## Images Published
+## docker-publish.yml
 
-The workflow builds and publishes the following Docker images:
+This workflow builds and publishes Docker images for the NewsFeed application. It is triggered on:
 
-- `beardedtek/newsfeed-nginx` - The Nginx service with documentation
-- `beardedtek/newsfeed` - The frontend service
-- `beardedtek/newsfeed-backend` - The backend service
+- Pushes to `main` and `dev` branches
+- Pushes of tags matching `v*.*.*` (e.g., `v1.0.0`)
+- Pull requests to `main` and `dev` branches
 
-## Tags
+### What it does
 
-Each image is tagged with:
+1. Builds the documentation using Hugo via the `nginx/build-nginx.sh` script
+2. Builds the Docker images for all services:
+   - `beardedtek/newsfeed-nginx`: Nginx container with documentation
+   - `beardedtek/newsfeed`: Frontend Next.js application
+   - `beardedtek/newsfeed-backend`: Backend FastAPI application
+3. Pushes the images to Docker Hub with appropriate tags (except for pull requests)
 
-- `:latest` - For the default branch (main)
-- `:<branch>` - The branch name (e.g., `main`, `develop`)
-- `:<commit>` - The short SHA of the commit
+### Image Tags
 
-## Setup
+The workflow generates the following tags for each image:
 
-To use this workflow, you need to set up the following secrets in your GitHub repository:
+- `latest`: Always points to the most recent build from the main branch
+- `<branch-name>`: The name of the branch that triggered the build
+- `<commit-sha>`: The first 7 characters of the commit SHA
 
-1. `DOCKERHUB_USERNAME` - Your Docker Hub username
-2. `DOCKERHUB_TOKEN` - A Docker Hub access token (not your password)
+### Required Secrets
 
-### Creating a Docker Hub Access Token
+The workflow requires the following secrets to be set in the GitHub repository:
 
-1. Log in to [Docker Hub](https://hub.docker.com/)
-2. Go to Account Settings > Security
-3. Click "New Access Token"
-4. Give it a name (e.g., "GitHub Actions")
-5. Copy the token and add it as a secret in your GitHub repository
+- `DOCKERHUB_USERNAME`: Your Docker Hub username
+- `DOCKERHUB_TOKEN`: A Docker Hub access token (not your password)
 
-### Adding Secrets to GitHub
+## Integration with Build Scripts
 
-1. Go to your GitHub repository
-2. Click on "Settings" > "Secrets and variables" > "Actions"
-3. Click "New repository secret"
-4. Add the following secrets:
-   - Name: `DOCKERHUB_USERNAME`, Value: Your Docker Hub username
-   - Name: `DOCKERHUB_TOKEN`, Value: Your Docker Hub access token
+The workflow uses the following build scripts:
 
-## Workflow Triggers
+1. `nginx/build-nginx.sh`: Builds the nginx image with the documentation site
+   - Called directly with the `--push` flag when not a pull request
+   - Called with the `--debug` flag to provide more verbose output
 
-The workflow is triggered on:
+2. For the frontend and backend services, it uses Docker's `build-push-action` to build and push the images.
 
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop` branches
-- Push of version tags (e.g., `v1.0.0`)
+## Local vs CI/CD Environment
 
-Note that images are only pushed to Docker Hub on push events, not on pull requests.
+The build scripts detect whether they're running in a GitHub Actions environment and adjust their behavior accordingly:
 
-## Customization
+- In GitHub Actions, they use environment variables like `GITHUB_REF_NAME` and `GITHUB_SHA`
+- Locally, they use git commands to determine branch and commit information
 
-You can customize this workflow by:
-
-- Adding more branches to the trigger list
-- Changing the tag format
-- Adding more Docker images
-- Adding build arguments
-- Configuring additional platforms (e.g., for multi-architecture builds)
-
-## Caching
-
-The workflow uses GitHub's cache to speed up builds. Docker layers are cached between runs, which significantly reduces build time. 
+This allows the same scripts to be used both locally and in CI/CD while providing a simplified experience for local development. 

@@ -198,3 +198,32 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For support, please open an issue in the GitHub repository or email <newsfeed@beardedtek.com>
+
+## Building and Running
+
+### Local Development
+
+For local development, use the simplified build script:
+
+```bash
+# Build all images and start services
+./build.sh
+
+# Build and start services in detached mode
+./build.sh -d
+
+# Show debug output
+./build.sh --debug
+```
+
+### Building the Nginx Image Separately
+
+If you need to rebuild just the Nginx image (which includes the documentation):
+
+```bash
+./nginx/build-nginx.sh
+```
+
+### CI/CD
+
+The project includes GitHub Actions workflows for continuous integration and deployment. See the [CI/CD documentation](docs/content/docs/deployment/ci-cd.md) for more information.
