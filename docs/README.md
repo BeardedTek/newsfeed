@@ -44,7 +44,7 @@ The built site will be in the `public/` directory.
 
 ## Configuration Notes
 
-The `hugo.toml` file is configured with `baseURL = '/docs/'` for the Nginx container deployment. For GitHub Pages deployment, the GitHub Actions workflow automatically creates a modified configuration with `baseURL = '/'`.
+The `hugo.toml` file is configured with `baseURL = '/docs/'` for the Nginx container deployment. For GitHub Pages deployment, the GitHub Actions workflow automatically creates a modified configuration with `baseURL = '/newsfeed/'`.
 
 ## Adding Content
 
