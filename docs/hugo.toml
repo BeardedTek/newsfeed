@@ -43,3 +43,9 @@ theme = 'hugo-book'
   # See https://gohugo.io/content-management/comments/#configure-disqus
   # Can be overwritten by same param in page frontmatter
   BookComments = false
+
+# For GitHub Pages deployment - this is handled by the GitHub Action workflow
+# [deployment]
+#   [[deployment.targets]]
+#     name = "GitHub Pages"
+#     URL = "https://beardedtek.github.io/newsfeed/"

@@ -1,5 +1,25 @@
 # NewsFeed
 
+[![Docker Build](https://github.com/beardedtek/newsfeed/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/beardedtek/newsfeed/actions/workflows/docker-publish.yml)
+[![Documentation](https://github.com/beardedtek/newsfeed/actions/workflows/deploy-docs.yml/badge.svg)](https://beardedtek.github.io/newsfeed/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/beardedtek/newsfeed)](https://hub.docker.com/r/beardedtek/newsfeed)
+[![License](https://img.shields.io/github/license/beardedtek/newsfeed)](LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/beardedtek/newsfeed)](https://github.com/beardedtek/newsfeed/issues)
+[![GitHub stars](https://img.shields.io/github/stars/beardedtek/newsfeed)](https://github.com/beardedtek/newsfeed/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/beardedtek/newsfeed)](https://github.com/beardedtek/newsfeed/commits/main)
+
+NewsFeed is a modern, self-hosted RSS reader and news aggregation platform built with FastAPI, Next.js, and FreshRSS.
+
+## Features
+
+- **Modern UI**: Clean, responsive interface built with Next.js and Material UI
+- **Personalization**: Customizable news feed based on user preferences
+- **Categories**: Organize sources into categories for better content management
+- **Search**: Full-text search across all articles
+- **Authentication**: Secure authentication via Casdoor
+- **Mobile-friendly**: Responsive design works on all devices
+- **Self-hosted**: Full control over your data and privacy
+
 A modern news aggregation and personalization platform built with Next.js, FastAPI, and Docker. This application provides a seamless experience for users to discover, read, and organize news content from various sources.
 
 ## Features
@@ -228,3 +248,16 @@ This approach simplifies deployment by eliminating the need for separate build s
 ### CI/CD
 
 The project includes GitHub Actions workflows for continuous integration and deployment. See the [CI/CD documentation](docs/content/docs/deployment/ci-cd.md) for more information.
+
+#### Skipping CI/CD Workflows
+
+You can skip CI/CD workflows by including specific phrases in your commit messages:
+
+- `NO_CICD`: Skips all CI/CD workflows
+- `NO_CICD_DOCKER`: Skips only the Docker build and publish workflow
+- `NO_CICD_DOCS`: Skips only the documentation deployment workflow
+
+Example:
+```bash
+git commit -m "Update README [NO_CICD]"  # Skips all workflows
+```

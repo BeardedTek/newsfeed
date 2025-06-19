@@ -2,6 +2,11 @@
 
 This directory contains the documentation website for the NewsFeed project. The documentation is built using [Hugo](https://gohugo.io/) with the [Hugo Book](https://github.com/alex-shpak/hugo-book) theme.
 
+## Online Documentation
+
+The documentation is automatically deployed to GitHub Pages and can be accessed at:
+https://beardedtek.github.io/newsfeed/
+
 ## Development
 
 To run the documentation site locally for development:
@@ -37,6 +42,10 @@ The built site will be in the `public/` directory.
 - `themes/` - Hugo themes
 - `hugo.toml` - Hugo configuration file
 
+## Configuration Notes
+
+The `hugo.toml` file is configured with `baseURL = '/docs/'` for the Nginx container deployment. For GitHub Pages deployment, the GitHub Actions workflow automatically creates a modified configuration with `baseURL = '/'`.
+
 ## Adding Content
 
 To add new content:
@@ -55,4 +64,8 @@ To add new content:
 
 ## Deployment
 
-The documentation is served by the Nginx container at the `/docs/` path. When the NewsFeed application is deployed, the documentation is automatically built as part of the Nginx container's multi-stage build process and served at the `/docs/` path.
+The documentation is deployed in two ways:
+
+1. **Application Integration**: The documentation is served by the Nginx container at the `/docs/` path. When the NewsFeed application is deployed, the documentation is automatically built as part of the Nginx container's multi-stage build process.
+
+2. **GitHub Pages**: The documentation is also automatically deployed to GitHub Pages whenever changes are made to the `docs/` directory in the main branch. This makes the documentation available online even without running the application.

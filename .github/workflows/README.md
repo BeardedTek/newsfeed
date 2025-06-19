@@ -33,6 +33,34 @@ The workflow requires the following secrets to be set in the GitHub repository:
 - `DOCKERHUB_USERNAME`: Your Docker Hub username
 - `DOCKERHUB_TOKEN`: A Docker Hub access token (not your password)
 
+## deploy-docs.yml
+
+This workflow builds and deploys the documentation to GitHub Pages. It is triggered on:
+
+- Pushes to the `main` branch that include changes to the `docs/` directory
+- Manual triggering via the GitHub Actions UI
+
+### What it does
+
+1. Modifies the Hugo configuration for GitHub Pages deployment
+2. Builds the documentation using Hugo
+3. Deploys the built site to GitHub Pages
+
+## Skipping Workflows
+
+You can skip workflows by including specific phrases in your commit messages:
+
+- `NO_CICD`: Skips all CI/CD workflows
+- `NO_CICD_DOCKER`: Skips only the Docker build and publish workflow
+- `NO_CICD_DOCS`: Skips only the documentation deployment workflow
+
+Examples:
+```
+git commit -m "Update README [NO_CICD]"  # Skips all workflows
+git commit -m "Fix typo in docs [NO_CICD_DOCKER]"  # Only skips Docker workflow
+git commit -m "Update Docker config [NO_CICD_DOCS]"  # Only skips docs workflow
+```
+
 ## Docker Build Process
 
 The workflow uses Docker's `build-push-action` to build and push all images, including:

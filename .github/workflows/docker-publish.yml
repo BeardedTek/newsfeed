@@ -14,7 +14,41 @@ env:
   BACKEND_IMAGE_NAME: beardedtek/newsfeed-backend
 
 jobs:
+  check-commit-message:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Check commit message
+        id: check
+        run: |
+          # Get the commit message
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For pull requests, use the PR title
+            COMMIT_MSG="${{ github.event.pull_request.title }}"
+          else
+            # For pushes, use the commit message
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+          fi
+          echo "Commit message: $COMMIT_MSG"
+          
+          # Check for skip phrases
+          if echo "$COMMIT_MSG" | grep -qE 'NO_CICD|NO_CICD_DOCKER'; then
+            echo "Skipping workflow due to commit message containing NO_CICD or NO_CICD_DOCKER"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "No skip phrase found, proceeding with workflow"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
   build-and-push:
+    needs: check-commit-message
+    if: ${{ needs.check-commit-message.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
