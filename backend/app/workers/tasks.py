@@ -360,7 +360,7 @@ def setup_periodic_tasks(sender, **kwargs):
         )
     else:
         # Otherwise schedule by minutes
-    sender.add_periodic_task(
+        sender.add_periodic_task(
             crontab(minute=f'*/{PROCESS_ARTICLES_INTERVAL}'),
         process_articles.s(),
             name=f'process_articles_every_{PROCESS_ARTICLES_INTERVAL}_minutes'
@@ -385,7 +385,7 @@ def setup_periodic_tasks(sender, **kwargs):
         )
     else:
         # Otherwise schedule by minutes
-    sender.add_periodic_task(
+        sender.add_periodic_task(
             crontab(minute=f'*/{PURGE_OLD_ARTICLES_INTERVAL}'),
         purge_old_articles.s(),
             name=f'purge_old_articles_every_{PURGE_OLD_ARTICLES_INTERVAL}_minutes'
@@ -402,7 +402,7 @@ def setup_periodic_tasks(sender, **kwargs):
         )
     else:
         # Otherwise schedule by minutes
-    sender.add_periodic_task(
+        sender.add_periodic_task(
             crontab(minute=f'*/{ENRICH_ARTICLES_INTERVAL}'),
         enrich_articles.s(),
             name=f'enrich_articles_every_{ENRICH_ARTICLES_INTERVAL}_minutes'

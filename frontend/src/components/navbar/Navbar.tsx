@@ -6,7 +6,8 @@ import { HiSun, HiMoon, HiInformationCircle, HiMail, HiShieldCheck, HiSearch, Hi
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSearchContext } from '@/context/SearchContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, useEnv } from '@/context/AuthContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const GitHubLogo = ({ className = "" }) => (
   <svg viewBox="0 0 16 16" fill="currentColor" className={className} aria-hidden="true">
@@ -47,28 +48,35 @@ export function NavbarContent() {
   const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
-  // Robust admin check for both string and object role shapes
-  const isAdmin = user?.roles?.some((role: any) => role.name === 'admin' || role === 'admin') || false;
+  const env = useEnv();
+  // Use the isAdmin property directly from the user object
+  const isAdmin = user?.isAdmin || false;
 
   // Dropdown open state for About and Admin
   const [aboutOpen, setAboutOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const aboutRef = useRef<HTMLDivElement>(null);
   const adminRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         aboutRef.current && !aboutRef.current.contains(event.target as Node) &&
-        adminRef.current && !adminRef.current.contains(event.target as Node)
+        adminRef.current && !adminRef.current.contains(event.target as Node) &&
+        userMenuRef.current && !userMenuRef.current.contains(event.target as Node)
       ) {
         setAboutOpen(false);
         setAdminOpen(false);
+        setUserMenuOpen(false);
       } else if (aboutRef.current && !aboutRef.current.contains(event.target as Node)) {
         setAboutOpen(false);
       } else if (adminRef.current && !adminRef.current.contains(event.target as Node)) {
         setAdminOpen(false);
+      } else if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -95,11 +103,11 @@ export function NavbarContent() {
 
   // Casdoor login redirect handler
   const handleLogin = () => {
-    const serverUrl = process.env.NEXT_PUBLIC_CASDOOR_SERVER_URL ?? "";
-    const clientId = process.env.NEXT_PUBLIC_CASDOOR_CLIENT_ID ?? "";
-    const appName = process.env.NEXT_PUBLIC_CASDOOR_APP_NAME ?? "";
-    const orgName = process.env.NEXT_PUBLIC_CASDOOR_ORG_NAME ?? "";
-    const redirectUri = process.env.NEXT_PUBLIC_CASDOOR_REDIRECT_URI ?? "";
+    const serverUrl = env.CASDOOR_SERVER_URL;
+    const clientId = env.CASDOOR_CLIENT_ID;
+    const appName = env.CASDOOR_APP_NAME;
+    const orgName = env.CASDOOR_ORG_NAME;
+    const redirectUri = env.CASDOOR_REDIRECT_URI;
 
     if (!serverUrl || !clientId || !appName || !orgName || !redirectUri) {
       alert("Missing Casdoor environment variables. Please check your configuration.");
@@ -198,6 +206,8 @@ export function NavbarContent() {
               </div>
             )}
           </div>
+          {/* Theme toggle */}
+          <ThemeToggle />
           {/* Admin dropdown (if admin) */}
           {isAdmin && (
             <div className="relative ml-2" ref={adminRef}>
@@ -231,36 +241,75 @@ export function NavbarContent() {
               )}
             </div>
           )}
-          {/* Login/Logout button for users */}
-          {!user ? (
-            <button
-              onClick={handleLogin}
-              className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
-              style={{ border: 'none', background: 'none' }}
-            >
-              <HiUserGroup className="w-5 h-5 md:mr-2" />
-              <span className="hidden md:inline">Login</span>
-            </button>
+          {/* User avatar dropdown or login button */}
+          {user ? (
+            <div className="relative ml-2" ref={userMenuRef}>
+              <button
+                className="flex items-center ml-2 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={() => {
+                  setUserMenuOpen((open) => !open);
+                  setAboutOpen(false);
+                  setAdminOpen(false);
+                }}
+                aria-haspopup="true"
+                aria-expanded={userMenuOpen}
+              >
+                {user.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={`${user.displayName || user.name}'s avatar`} 
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                    {(user.displayName || user.name || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50">
+                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.displayName || user.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/preferences"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Preferences
+                    </Link>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 font-medium text-red-600 dark:text-red-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        logout();
+                      }}
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <button
-              onClick={logout}
-              className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
-              style={{ border: 'none', background: 'none' }}
+              className="flex items-center px-4 py-2 ml-2 text-white bg-blue-500 hover:bg-blue-600 rounded shadow-none border-none transition-colors"
+              onClick={handleLogin}
+              aria-label="Login"
             >
-              <HiUserGroup className="w-5 h-5 md:mr-2" />
-              <span className="hidden md:inline">Logout</span>
+              <HiShieldCheck className="w-5 h-5 md:mr-2" />
+              <span className="hidden md:inline">Login</span>
             </button>
           )}
-          {/* Light/Dark mode toggle button */}
-          <button
-            type="button"
-            aria-label="Toggle light/dark mode"
-            onClick={() => setIsDarkMode((prev) => !prev)}
-            className="flex items-center px-2 py-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
-            style={{ border: 'none', background: 'none' }}
-          >
-            {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
-          </button>
         </div>
       </div>
 
@@ -353,25 +402,60 @@ export function NavbarContent() {
               </Accordion>
             );
           })()}
-            {/* Login/Logout button for users (mobile) */}
+            {/* User profile or login button for mobile */}
             {!user ? (
               <button
                 onClick={handleLogin}
-                className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
-                style={{ border: 'none', background: 'none' }}
+                className="flex items-center mx-4 my-2 px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded shadow-none border-none transition-colors"
               >
-                <HiUserGroup className="w-5 h-5 mr-2" />
+                <HiShieldCheck className="w-5 h-5 mr-2" />
                 <span>Login</span>
               </button>
             ) : (
-              <button
-                onClick={logout}
-                className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded cursor-pointer bg-transparent border-none focus:outline-none"
-                style={{ border: 'none', background: 'none' }}
-              >
-                <HiUserGroup className="w-5 h-5 mr-2" />
-                <span>Logout</span>
-              </button>
+              <div className="px-4 py-2">
+                <div className="flex items-center gap-3 mb-2">
+                  {user.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt={`${user.displayName || user.name}'s avatar`} 
+                      className="w-8 h-8 rounded-full"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                      {(user.displayName || user.name || "U").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.displayName || user.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <div className="space-y-1 mt-3 border-t pt-2 dark:border-gray-700">
+                  <Link
+                    href="/profile"
+                    className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href="/preferences"
+                    className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Preferences
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="block w-full text-left px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 font-medium text-red-600 dark:text-red-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
             )}
             {/* Mobile light/dark mode toggle */}
             <Button

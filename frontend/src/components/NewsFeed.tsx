@@ -134,7 +134,9 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
       queryParams.append('skip', skip.toString());
       queryParams.append('limit', BATCH_SIZE.toString());
 
-      const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`);
+      const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`, {
+        credentials: 'include',
+      });
       const data = await response.json();
       
       const newArticles = data.articles || [];
@@ -194,7 +196,9 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
         if (query) queryParams.append('search', query);
         queryParams.append('limit', BATCH_SIZE.toString());
 
-        const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`);
+        const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`, {
+          credentials: 'include',
+        });
         const data = await response.json();
         
           let items = (data.articles || []).sort((a: Article, b: Article) => {
@@ -247,7 +251,9 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
   useEffect(() => {
     const fetchSources = async () => {
       try {
-        const res = await fetch('/api/sources/');
+        const res = await fetch('/api/sources/', {
+          credentials: 'include',
+        });
         const data = await res.json();
         if (data.sources) {
           setAllSources(data.sources);
@@ -269,63 +275,63 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
         <div className="flex flex-col md:flex-row justify-between items-center px-4 gap-4 py-2">
           {/* Search bar area - always takes up space even when hidden */}
           <div className="w-full md:flex-1 md:mr-4">
-            {showSearch && (
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const form = e.target as HTMLFormElement;
-                const input = form.querySelector('input') as HTMLInputElement;
-                if (input.value.trim()) {
-                  router.push(`/?q=${encodeURIComponent(input.value.trim())}`);
-                }
+        {showSearch && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const input = form.querySelector('input') as HTMLInputElement;
+              if (input.value.trim()) {
+                router.push(`/?q=${encodeURIComponent(input.value.trim())}`);
+              }
               }} className="w-full">
-                <TextInput
-                  type="search"
-                  placeholder="Search articles..."
-                  defaultValue={query ?? ''}
-                  icon={HiSearch}
+              <TextInput
+                type="search"
+                placeholder="Search articles..."
+                defaultValue={query ?? ''}
+                icon={HiSearch}
                   className="w-full"
-                />
-              </form>
+              />
+            </form>
             )}
           </div>
           
           {/* Dropdowns - stacked in mobile, side by side in desktop */}
           <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center w-full md:w-auto shrink-0">
-            <Select
-              value={selectedSource}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                setSelectedSource(e.target.value);
-                // Update URL to reflect the source filter
-                const params = new URLSearchParams(searchParams?.toString() || '');
-                params.set('source', e.target.value);
-                router.push(`/?${params.toString()}`);
-              }}
+          <Select
+            value={selectedSource}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setSelectedSource(e.target.value);
+              // Update URL to reflect the source filter
+              const params = new URLSearchParams(searchParams?.toString() || '');
+              params.set('source', e.target.value);
+              router.push(`/?${params.toString()}`);
+            }}
               className="w-full md:w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-            >
-              <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
-              {allSources.map(source => (
-                <option key={source.id} value={source.title} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source.title}</option>
-              ))}
-            </Select>
-            <Select
-              value={category || ''}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                // Update URL to reflect the category filter
-                const params = new URLSearchParams(searchParams?.toString() || '');
-                if (e.target.value) {
-                  params.set('category', e.target.value);
-                } else {
-                  params.delete('category');
-                }
-                router.push(`/?${params.toString()}`);
-              }}
+          >
+            <option value="all" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Sources</option>
+            {allSources.map(source => (
+              <option key={source.id} value={source.title} className="bg-white dark:bg-gray-800 dark:text-gray-200">{source.title}</option>
+            ))}
+          </Select>
+          <Select
+            value={category || ''}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              // Update URL to reflect the category filter
+              const params = new URLSearchParams(searchParams?.toString() || '');
+              if (e.target.value) {
+                params.set('category', e.target.value);
+              } else {
+                params.delete('category');
+              }
+              router.push(`/?${params.toString()}`);
+            }}
               className="w-full md:w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
-            >
-              <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
-              ))}
-            </Select>
+          >
+            <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
+            ))}
+          </Select>
           </div>
         </div>
       </div>

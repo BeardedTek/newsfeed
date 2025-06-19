@@ -1,5 +1,7 @@
+# Project Specific
 docs/public
 docs/.hugo_build.lock
+casdoor/files
 
 # Node.js
 node_modules/

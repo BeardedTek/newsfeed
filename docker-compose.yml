@@ -174,7 +174,7 @@ services:
       - ALLOW_ORIGIN=*
     volumes:
       - ./casdoor/app.conf:/conf/app.conf:ro
-      - ./casdoor/init_data.json:/conf/init_data.json:ro
+      - ./casdoor/files:/files
     depends_on:
       - casdoor-db
     networks:

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.auth.casdoor import require_role
+from app.auth.casdoor_sdk import require_role
 import os
 import httpx
 import time
