@@ -12,12 +12,11 @@ This workflow builds and publishes Docker images for the NewsFeed application. I
 
 ### What it does
 
-1. Builds the documentation using Hugo via the `nginx/build-nginx.sh` script
-2. Builds the Docker images for all services:
-   - `beardedtek/newsfeed-nginx`: Nginx container with documentation
+1. Builds the Docker images for all services using multi-stage builds:
+   - `beardedtek/newsfeed-nginx`: Nginx container with documentation (built using Hugo in the first stage)
    - `beardedtek/newsfeed`: Frontend Next.js application
    - `beardedtek/newsfeed-backend`: Backend FastAPI application
-3. Pushes the images to Docker Hub with appropriate tags (except for pull requests)
+2. Pushes the images to Docker Hub with appropriate tags (except for pull requests)
 
 ### Image Tags
 
@@ -34,21 +33,26 @@ The workflow requires the following secrets to be set in the GitHub repository:
 - `DOCKERHUB_USERNAME`: Your Docker Hub username
 - `DOCKERHUB_TOKEN`: A Docker Hub access token (not your password)
 
-## Integration with Build Scripts
+## Docker Build Process
 
-The workflow uses the following build scripts:
+The workflow uses Docker's `build-push-action` to build and push all images, including:
 
-1. `nginx/build-nginx.sh`: Builds the nginx image with the documentation site
-   - Called directly with the `--push` flag when not a pull request
-   - Called with the `--debug` flag to provide more verbose output
+1. Nginx image with the documentation site built using a multi-stage Dockerfile
+2. Frontend Next.js application
+3. Backend FastAPI application
 
-2. For the frontend and backend services, it uses Docker's `build-push-action` to build and push the images.
+Each image is built directly from its respective Dockerfile, without the need for additional build scripts.
 
 ## Local vs CI/CD Environment
 
-The build scripts detect whether they're running in a GitHub Actions environment and adjust their behavior accordingly:
+For local development, you can use Docker Compose to build and run the services:
 
-- In GitHub Actions, they use environment variables like `GITHUB_REF_NAME` and `GITHUB_SHA`
-- Locally, they use git commands to determine branch and commit information
+```bash
+# Build all services
+docker compose build
 
-This allows the same scripts to be used both locally and in CI/CD while providing a simplified experience for local development. 
+# Start all services
+docker compose up -d
+```
+
+The same Docker Compose configuration is used both locally and in CI/CD, providing a consistent experience across environments. 

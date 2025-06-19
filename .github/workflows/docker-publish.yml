@@ -48,13 +48,15 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push nginx image
-        run: |
-          chmod +x ./nginx/build-nginx.sh
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            ./nginx/build-nginx.sh --push --debug
-          else
-            ./nginx/build-nginx.sh --debug
-          fi
+        uses: docker/build-push-action@v5
+        with:
+          context: ./
+          file: ./nginx/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.NGINX_IMAGE_NAME }}:latest
+            ${{ env.NGINX_IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ env.NGINX_IMAGE_NAME }}:${{ github.sha }}
       
       # Build and push frontend image
       - name: Build and push frontend image
@@ -67,8 +69,6 @@ jobs:
             ${{ env.FRONTEND_IMAGE_NAME }}:latest
             ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}
             ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
       
       # Build and push backend image
       - name: Build and push backend image
@@ -82,5 +82,3 @@ jobs:
             ${{ env.BACKEND_IMAGE_NAME }}:latest
             ${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}
             ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max 

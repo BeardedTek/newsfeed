@@ -203,26 +203,27 @@ For support, please open an issue in the GitHub repository or email <newsfeed@be
 
 ### Local Development
 
-For local development, use the simplified build script:
+For local development, use Docker Compose:
 
 ```bash
-# Build all images and start services
-./build.sh
+# Build all images
+docker compose build
 
-# Build and start services in detached mode
-./build.sh -d
+# Start all services
+docker compose up -d
 
-# Show debug output
-./build.sh --debug
+# Build and start a specific service
+docker compose up -d --build nginx
 ```
 
-### Building the Nginx Image Separately
+### Simplified Nginx Build Process
 
-If you need to rebuild just the Nginx image (which includes the documentation):
+The Nginx image uses a multi-stage build process that:
 
-```bash
-./nginx/build-nginx.sh
-```
+1. Builds the documentation using Hugo in the first stage
+2. Serves the application and documentation with Nginx in the second stage
+
+This approach simplifies deployment by eliminating the need for separate build scripts.
 
 ### CI/CD
 

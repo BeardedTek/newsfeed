@@ -3,6 +3,9 @@ services:
   nginx:
     image: beardedtek/newsfeed-nginx:latest
     restart: always
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
     ports:
       - "8880:80"
     volumes:

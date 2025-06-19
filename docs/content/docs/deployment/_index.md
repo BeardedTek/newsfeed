@@ -14,22 +14,22 @@ The NewsFeed application is designed to be deployed using Docker and Docker Comp
 
 ### Build and Run
 
-To build and run the application, use the provided `build.sh` script at the project root:
+To build and run the application, use Docker Compose:
 
 ```bash
-./build.sh [options]
+# Build all services
+docker compose build
+
+# Start all services
+docker compose up -d
+
+# Build and start a specific service
+docker compose up -d --build nginx
 ```
 
-Available options:
-- `--nginx-only`: Only build the nginx image
-- `--no-nginx`: Skip building the nginx image
-- `--push`: Push images to Docker Hub after building
-- `--up`: Start the services after building
-- `-d`: Start the services in detached mode
+### Simplified Nginx Build
 
-### Custom Nginx Build
-
-The nginx service uses a custom build process defined in `nginx/build-nginx.sh`. This script builds the documentation using Hugo before building the Docker image.
+The Nginx service uses a multi-stage build process defined in `nginx/Dockerfile`. This approach builds the documentation using Hugo in the first stage and then serves it with Nginx in the second stage, simplifying the deployment process.
 
 ### Services
 

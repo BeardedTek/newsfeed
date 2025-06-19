@@ -18,7 +18,7 @@ Then visit <http://localhost:1313> in your browser.
 
 ## Building for Production
 
-To build the documentation for production:
+The documentation is automatically built as part of the Nginx container's multi-stage build process. However, if you want to build the documentation separately:
 
 ```bash
 # Using the build script
@@ -55,4 +55,4 @@ To add new content:
 
 ## Deployment
 
-The documentation is served by the Nginx container at the `/docs/` path. When the NewsFeed application is deployed, the documentation is automatically built and served.
+The documentation is served by the Nginx container at the `/docs/` path. When the NewsFeed application is deployed, the documentation is automatically built as part of the Nginx container's multi-stage build process and served at the `/docs/` path.

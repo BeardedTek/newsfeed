@@ -18,7 +18,7 @@ The Nginx configuration is defined in `nginx/proxy.conf` and is used to:
 
 ## Key Features
 
-- **Pre-built documentation**: Documentation is built before the Docker image
+- **Built-in documentation**: Documentation is built directly in the Dockerfile using multi-stage builds
 - **Performance optimizations**: Increased worker connections, file descriptors, and TCP optimizations
 - **Security enhancements**: Runs as non-root user, includes security headers
 - **Health checks**: Automatic monitoring of service health
@@ -33,32 +33,22 @@ For security reasons, the Nginx container runs as the `nginx` user (non-root). T
 
 This configuration helps improve security by reducing the privileges of the Nginx process.
 
-## Custom Build Process
+## Simplified Build Process
 
-The Nginx image uses a custom build process defined in `nginx/build-nginx.sh`. This script:
+The Nginx image uses a multi-stage build process defined in `nginx/Dockerfile`. This approach:
 
-1. Builds the documentation using Hugo
-2. Builds the Docker image with the pre-built documentation
-3. Optionally pushes the image to Docker Hub
+1. Uses Hugo in the first stage to build the documentation
+2. Uses Nginx in the second stage with the pre-built documentation
+3. Is automatically built as part of the Docker Compose workflow
 
 To build the Nginx image:
 
 ```bash
-# Build the nginx image
-./nginx/build-nginx.sh
+# Build using docker compose
+docker compose build nginx
 
-# Build and push to Docker Hub
-./nginx/build-nginx.sh --push
-```
-
-Alternatively, you can use the unified build script:
-
-```bash
-# Build only the nginx image
-./build.sh --nginx-only
-
-# Build and push to Docker Hub
-./build.sh --nginx-only --push
+# Or build directly with docker
+docker build -t newsfeed-nginx -f nginx/Dockerfile .
 ```
 
 ## Configuration Details
@@ -136,7 +126,7 @@ add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 To customize the Nginx configuration:
 
 1. Edit the `nginx/proxy.conf` file
-2. Rebuild the Nginx image using `./nginx/build-nginx.sh` or `./build.sh --nginx-only`
+2. Rebuild the Nginx image using `docker compose build nginx`
 3. Restart the container
 
 For advanced customization, you may need to modify the `nginx/Dockerfile` as well. 

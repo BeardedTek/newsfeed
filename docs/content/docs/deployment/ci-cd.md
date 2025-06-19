@@ -11,9 +11,8 @@ NewsFeed includes a GitHub Actions workflow for continuous integration and deplo
 
 The GitHub Actions workflow is defined in `.github/workflows/docker-publish.yml` and performs the following tasks:
 
-1. Builds the documentation using Hugo
-2. Builds the Docker images for all services
-3. Pushes the images to Docker Hub with appropriate tags
+1. Builds the Docker images for all services (including documentation in the Nginx image)
+2. Pushes the images to Docker Hub with appropriate tags
 
 ### Image Tags
 
@@ -33,32 +32,33 @@ The following Docker images are built and published:
 
 ## Build Process
 
-The build process uses two main scripts:
+The build process uses Docker's multi-stage builds to simplify deployment:
 
-1. `build.sh` - A simplified script for local development that builds all services and starts them
-2. `nginx/build-nginx.sh` - A script that builds the nginx image with the documentation site
+1. The Nginx container uses a multi-stage build to generate documentation with Hugo and then serve it with Nginx
+2. The frontend and backend containers use their respective Dockerfiles for building
+3. All containers can be built together using `docker compose build`
 
-### Custom Nginx Build
+### Simplified Nginx Build
 
-The nginx image requires a special build process because it includes the documentation site. The `nginx/build-nginx.sh` script:
+The Nginx image now uses a multi-stage build defined in `nginx/Dockerfile`:
 
-1. Builds the documentation using Hugo
-2. Builds the Docker image with the pre-built documentation
-3. Optionally pushes the image to Docker Hub when the `--push` flag is provided
+1. First stage uses Hugo to build the documentation
+2. Second stage uses Nginx to serve the application and documentation
+3. No separate build scripts are needed
 
 ## Local Development
 
-For local development, use the simplified build script:
+For local development, use Docker Compose:
 
 ```bash
-# Build all images and start services
-./build.sh
+# Build all images
+docker compose build
 
-# Build and start services in detached mode
-./build.sh -d
+# Start all services
+docker compose up -d
 
-# Show debug output
-./build.sh --debug
+# Build and start a specific service
+docker compose up -d --build nginx
 ```
 
 ## Production Deployment
