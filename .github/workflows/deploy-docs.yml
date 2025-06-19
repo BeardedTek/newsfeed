@@ -66,7 +66,7 @@ jobs:
         run: |
           # Create a temporary config file with baseURL set to '/' for GitHub Pages
           cp hugo.toml hugo.github.toml
-          sed -i "s|baseURL = '/docs/'|baseURL = '/newsfeed/'|" hugo.github.toml
+          sed -i "s|baseURL = '/docs/'|baseURL = 'https://beardedtek.github.io/newsfeed/'|" hugo.github.toml
           echo "Using modified config for GitHub Pages deployment:"
           cat hugo.github.toml | grep baseURL
 
