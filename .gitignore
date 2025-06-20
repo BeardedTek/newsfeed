@@ -1,4 +1,7 @@
 # Project Specific
+env/
+env/frontend
+env/backend
 docs/public
 docs/.hugo_build.lock
 casdoor/files

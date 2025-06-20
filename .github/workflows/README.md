@@ -84,3 +84,5 @@ docker compose up -d
 ```
 
 The same Docker Compose configuration is used both locally and in CI/CD, providing a consistent experience across environments. 
+
+NOTE: reverted back to 54966bdb4fee0e9e1b7ff72b3d0ce708e1ce0eaf
