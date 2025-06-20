@@ -76,6 +76,15 @@ export default function SignInPage() {
     }
   };
 
+  const getCasdoorSignupUrl = () => {
+    if (typeof window !== 'undefined' && window.ENV_CONFIG) {
+      const serverUrl = window.ENV_CONFIG.NEXT_PUBLIC_CASDOOR_SERVER_URL;
+      const appName = window.ENV_CONFIG.NEXT_PUBLIC_CASDOOR_APP_NAME;
+      return `${serverUrl}/signup/${appName}`;
+    }
+    return '/signup';
+  };
+
   return (
     <section className="bg-gray-50 dark:bg-gray-900 max-w-screen-md mx-auto">
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
@@ -146,7 +155,7 @@ export default function SignInPage() {
                 ) : 'Sign in'}
               </button>
               <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Don't have an account yet? <Link href="/signup" className="font-medium text-blue-600 hover:underline dark:text-blue-500">Sign up</Link>
+                Don't have an account yet? <a href={getCasdoorSignupUrl()} className="font-medium text-blue-600 hover:underline dark:text-blue-500">Sign up</a>
               </p>
             </form>
           </div>

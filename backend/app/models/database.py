@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Table, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Table, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -56,4 +56,21 @@ class Category(Base):
     description = Column(Text)
     
     # Relationships
-    articles = relationship('Article', secondary=article_category, back_populates='categories') 
+    articles = relationship('Article', secondary=article_category, back_populates='categories')
+
+class CustomCategory(Base):
+    __tablename__ = 'custom_categories'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), nullable=False)  # Casdoor user ID
+    name = Column(String(100), nullable=False)
+    sources = Column(JSON)  # List of source IDs
+    categories = Column(JSON)  # List of category names
+    search = Column(String(255))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Composite unique constraint for user_id and name
+    __table_args__ = (
+        {'sqlite_autoincrement': True},
+    ) 

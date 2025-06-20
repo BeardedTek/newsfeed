@@ -275,8 +275,7 @@ class AuthService:
                 # Get token expiry for the frontend
                 token_expiry = AuthService.get_token_expiry(access_token)
                 
-                # Return user data and token expiry to the client
-                logger.info(f"[{request_id}] Authentication successful for user: {user_data.get('name', 'unknown')}")
+                # Return user data and token expiry
                 return {
                     "user": user_data,
                     "tokenExpiry": token_expiry
@@ -289,67 +288,58 @@ class AuthService:
                     content={"error": f"Error getting token: {str(e)}"}
                 )
                 
-        except json.JSONDecodeError as e:
-            logger.error(f"[{request_id}] JSON decode error: {str(e)}")
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Invalid JSON in request body"}
-            )
         except Exception as e:
-            logger.error(f"[{request_id}] Error in Casdoor callback: {str(e)}")
-            logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
+            logger.error(f"[{request_id}] Error in casdoor_callback: {str(e)}")
             return JSONResponse(
                 status_code=500,
-                content={"error": f"An error occurred: {str(e)}"}
+                content={"error": f"Error in casdoor_callback: {str(e)}"}
             )
-
+    
     @staticmethod
     def is_admin(user: Dict[str, Any]) -> bool:
-        """Check if the user has admin role."""
-        if not user or "roles" not in user:
+        """Check if the user is an admin."""
+        if not user:
             return False
-        
-        # Check if the user has any admin role
-        for role in user.get("roles", []):
-            if isinstance(role, dict) and role.get("name", "").lower() in ["admin", "administrator"]:
-                return True
-        
-        return False 
-
+            
+        # Check if the user has the admin role
+        roles = user.get("roles", [])
+        if "admin" in roles:
+            return True
+            
+        return False
+    
     @staticmethod
     async def update_profile(user_id: str, profile_data: Dict[str, Any], current_user: Dict[str, Any]):
-        """Update a user's profile in Casdoor."""
+        """Update the user's profile in Casdoor."""
         try:
             # Get the SDK instance
             sdk = get_async_casdoor_sdk()
             
-            # First, get the user from Casdoor
+            # Get the user from Casdoor
             user_response = await sdk.get_user(user_id)
-            
-            if not user_response or "name" not in user_response:
-                logger.error(f"Failed to get user {user_id} from Casdoor")
+            if "error" in user_response:
+                logger.error(f"Casdoor get user error: {user_response['error']}")
                 return JSONResponse(
-                    status_code=404,
-                    content={"error": "User not found"}
+                    status_code=400,
+                    content={"error": f"Casdoor error: {user_response['error']}"}
                 )
             
-            # Update the user object with the provided data
+            # Update the user object with the new profile data
+            user_object = user_response.get("data", {})
             for key, value in profile_data.items():
-                if key in ["displayName", "phone", "address", "avatar"]:
-                    user_response[key] = value
+                user_object[key] = value
             
             # Update the user in Casdoor
-            update_response = await sdk.update_user(user_response)
-            
-            if "data" in update_response:
-                return {"success": True, "user": update_response["data"]}
-            else:
-                logger.error(f"Failed to update user: {update_response}")
+            update_response = await sdk.update_user(user_object)
+            if "error" in update_response:
+                logger.error(f"Casdoor update user error: {update_response['error']}")
                 return JSONResponse(
-                    status_code=500,
-                    content={"error": "Failed to update user profile"}
+                    status_code=400,
+                    content={"error": f"Casdoor error: {update_response['error']}"}
                 )
-                
+            
+            return {"success": True, "message": "Profile updated successfully"}
+            
         except Exception as e:
             logger.error(f"Error updating profile: {str(e)}")
             return JSONResponse(
@@ -359,30 +349,53 @@ class AuthService:
     
     @staticmethod
     async def upload_avatar(user_id: str, file: UploadFile, current_user: Dict[str, Any]):
-        """Upload a user's avatar to Casdoor."""
+        """Upload avatar for the user to Casdoor."""
         try:
             # Get the SDK instance
             sdk = get_async_casdoor_sdk()
             
-            # Read file content
-            content = await file.read()
+            # Read the file content
+            file_content = await file.read()
             
-            # Upload the file to Casdoor
-            filename = f"avatar_{user_id}_{int(datetime.now().timestamp())}"
-            upload_response = await sdk.upload_resource(filename, content)
-            
-            if not upload_response or "data" not in upload_response:
-                logger.error(f"Failed to upload avatar: {upload_response}")
+            # Upload the avatar to Casdoor
+            upload_response = await sdk.upload_avatar(user_id, file_content, file.filename)
+            if "error" in upload_response:
+                logger.error(f"Casdoor upload avatar error: {upload_response['error']}")
                 return JSONResponse(
-                    status_code=500,
-                    content={"error": "Failed to upload avatar"}
+                    status_code=400,
+                    content={"error": f"Casdoor error: {upload_response['error']}"}
                 )
             
-            # Get the URL of the uploaded file
-            avatar_url = upload_response["data"]
+            # Get the avatar URL from the response
+            avatar_url = upload_response.get("data", {}).get("url", "")
+            if not avatar_url:
+                logger.error("No avatar URL in response")
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "No avatar URL in response"}
+                )
             
-            # Update the user's avatar
-            return await AuthService.update_profile(user_id, {"avatar": avatar_url}, current_user)
+            # Update the user's avatar in Casdoor
+            user_response = await sdk.get_user(user_id)
+            if "error" in user_response:
+                logger.error(f"Casdoor get user error: {user_response['error']}")
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": f"Casdoor error: {user_response['error']}"}
+                )
+            
+            user_object = user_response.get("data", {})
+            user_object["avatar"] = avatar_url
+            
+            update_response = await sdk.update_user(user_object)
+            if "error" in update_response:
+                logger.error(f"Casdoor update user error: {update_response['error']}")
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": f"Casdoor error: {update_response['error']}"}
+                )
+            
+            return {"success": True, "avatar": avatar_url}
             
         except Exception as e:
             logger.error(f"Error uploading avatar: {str(e)}")
@@ -392,237 +405,20 @@ class AuthService:
             )
     
     @staticmethod
-    async def create_user_with_email_verification(username: str, password: str, display_name: str, email: str):
-        """Create a new user with email verification required."""
-        try:
-            # Get the SDK instance
-            sdk = get_async_casdoor_sdk()
-            settings = get_settings()
-            
-            # Check if username or email already exists
-            existing_user = await sdk.get_user(username)
-            if existing_user and "name" in existing_user:
-                return JSONResponse(
-                    status_code=400,
-                    content={"error": "Username already exists"}
-                )
-            
-            # Check for existing email
-            users_with_email = await sdk.get_users(f"email={email}")
-            if users_with_email and len(users_with_email) > 0:
-                return JSONResponse(
-                    status_code=400,
-                    content={"error": "Email already in use"}
-                )
-            
-            # Create user object
-            user = {
-                "owner": settings.casdoor_org_name,
-                "name": username,
-                "password": password,
-                "displayName": display_name,
-                "email": email,
-                "emailVerified": False,  # Email not verified yet
-                "isAdmin": False,
-                "isForbidden": False,
-                "isDeleted": False,
-                "signupApplication": settings.casdoor_app_name
-            }
-            
-            # Add the user to Casdoor
-            add_response = await sdk.add_user(user)
-            
-            if "data" not in add_response:
-                logger.error(f"Failed to create user: {add_response}")
-                return JSONResponse(
-                    status_code=500,
-                    content={"error": "Failed to create user"}
-                )
-            
-            # Generate verification token
-            verification_token = secrets.token_urlsafe(32)
-            
-            # Create verification URL
-            frontend_url = settings.frontend_url
-            verification_url = f"{frontend_url}/verify-email?token={verification_token}"
-            
-            # Store token in Casdoor (using the affiliation field temporarily)
-            user_id = add_response["data"]
-            user["id"] = user_id
-            user["affiliation"] = verification_token  # Store token in affiliation field
-            await sdk.update_user(user)
-            
-            # Send verification email
-            email_subject = "Verify your email address"
-            email_content = f"""
-            <h2>Email Verification</h2>
-            <p>Hello {display_name},</p>
-            <p>Thank you for registering. Please click the link below to verify your email address:</p>
-            <p><a href="{verification_url}">Verify Email</a></p>
-            <p>This link will expire in 24 hours.</p>
-            """
-            
-            await sdk.send_email(
-                title=email_subject,
-                content=email_content,
-                sender="",  # Use default sender
-                receiver=email
-            )
-            
-            return {
-                "success": True,
-                "message": "User created successfully. Please check your email to verify your account."
-            }
-            
-        except Exception as e:
-            logger.error(f"Error creating user: {str(e)}")
-            return JSONResponse(
-                status_code=500,
-                content={"error": f"Error creating user: {str(e)}"}
-            )
-    
-    @staticmethod
-    async def verify_email(token: str):
-        """Verify a user's email using the verification token."""
-        try:
-            # Get the SDK instance
-            sdk = get_async_casdoor_sdk()
-            settings = get_settings()
-            
-            # Find user with this verification token
-            users = await sdk.get_users(f"affiliation={token}")
-            
-            if not users or len(users) == 0:
-                return JSONResponse(
-                    status_code=400,
-                    content={"error": "Invalid or expired verification token"}
-                )
-            
-            user = users[0]
-            
-            # Update user to mark email as verified
-            user["emailVerified"] = True
-            user["affiliation"] = ""  # Clear the token
-            
-            # Update the user in Casdoor
-            update_response = await sdk.update_user(user)
-            
-            if "data" not in update_response:
-                logger.error(f"Failed to verify email: {update_response}")
-                return JSONResponse(
-                    status_code=500,
-                    content={"error": "Failed to verify email"}
-                )
-            
-            return {
-                "success": True,
-                "message": "Email verified successfully. You can now log in."
-            }
-            
-        except Exception as e:
-            logger.error(f"Error verifying email: {str(e)}")
-            return JSONResponse(
-                status_code=500,
-                content={"error": f"Error verifying email: {str(e)}"}
-            )
-    
-    @staticmethod
-    async def resend_verification_email(email: str):
-        """Resend verification email to a user."""
-        try:
-            # Get the SDK instance
-            sdk = get_async_casdoor_sdk()
-            settings = get_settings()
-            
-            # Find user with this email
-            users = await sdk.get_users(f"email={email}")
-            
-            if not users or len(users) == 0:
-                return JSONResponse(
-                    status_code=404,
-                    content={"error": "User not found"}
-                )
-            
-            user = users[0]
-            
-            # Check if email is already verified
-            if user.get("emailVerified", False):
-                return JSONResponse(
-                    status_code=400,
-                    content={"error": "Email is already verified"}
-                )
-            
-            # Generate new verification token
-            verification_token = secrets.token_urlsafe(32)
-            
-            # Create verification URL
-            frontend_url = settings.frontend_url
-            verification_url = f"{frontend_url}/verify-email?token={verification_token}"
-            
-            # Update token in Casdoor
-            user["affiliation"] = verification_token
-            await sdk.update_user(user)
-            
-            # Send verification email
-            email_subject = "Verify your email address"
-            email_content = f"""
-            <h2>Email Verification</h2>
-            <p>Hello {user.get('displayName', '')},</p>
-            <p>Please click the link below to verify your email address:</p>
-            <p><a href="{verification_url}">Verify Email</a></p>
-            <p>This link will expire in 24 hours.</p>
-            """
-            
-            await sdk.send_email(
-                title=email_subject,
-                content=email_content,
-                sender="",  # Use default sender
-                receiver=email
-            )
-            
-            return {
-                "success": True,
-                "message": "Verification email sent. Please check your inbox."
-            }
-            
-        except Exception as e:
-            logger.error(f"Error resending verification: {str(e)}")
-            return JSONResponse(
-                status_code=500,
-                content={"error": f"Error resending verification: {str(e)}"}
-            )
-    
-    @staticmethod
     async def custom_signin(username: str, password: str, response: Response):
-        """Custom sign-in that checks if email is verified."""
+        """Custom sign-in that checks if the email is verified."""
         try:
             # Get the SDK instance
             sdk = get_async_casdoor_sdk()
             
-            # First, get the user to check if email is verified
-            user = await sdk.get_user(username)
-            
-            if not user or "name" not in user:
-                return JSONResponse(
-                    status_code=401,
-                    content={"error": "Invalid username or password"}
-                )
-            
-            # Check if email is verified
-            if not user.get("emailVerified", False):
-                return JSONResponse(
-                    status_code=403,
-                    content={"error": "Email not verified", "email": user.get("email", "")}
-                )
-            
-            # Get token using password credentials
+            # Try to get a token using password credentials
             token_data = await sdk.get_oauth_token(username=username, password=password)
             
             if "error" in token_data:
                 logger.error(f"Casdoor token error: {token_data['error']}")
                 return JSONResponse(
-                    status_code=401,
-                    content={"error": "Invalid username or password"}
+                    status_code=400,
+                    content={"error": f"Casdoor error: {token_data['error']}"}
                 )
             
             access_token = token_data.get("access_token")
@@ -632,12 +428,39 @@ class AuthService:
             if not access_token:
                 logger.error("No access token in response")
                 return JSONResponse(
-                    status_code=500,
-                    content={"error": "Authentication error"}
+                    status_code=400,
+                    content={"error": "No access token in response"}
                 )
             
             # Parse the JWT token to get user info
             user_data = sdk.parse_jwt_token(access_token)
+            
+            # Check if email is verified
+            user_id = user_data.get("id")
+            if user_id:
+                try:
+                    user_response = await sdk.get_user(user_id)
+                    
+                    # Check if user_response is None or doesn't have the expected structure
+                    if not user_response:
+                        logger.warning(f"Null user response for user_id: {user_id}")
+                    elif "data" not in user_response:
+                        logger.warning(f"User response missing 'data' field for user_id: {user_id}, response: {user_response}")
+                    else:
+                        user_object = user_response.get("data", {})
+                        
+                        # Check if the user has properties and if the email_verified property is false
+                        if user_object.get("properties") and user_object.get("properties", {}).get("email_verified") == "false":
+                            return JSONResponse(
+                                status_code=403,
+                                content={
+                                    "error": "Email not verified",
+                                    "email": user_object.get("email", "")
+                                }
+                            )
+                except Exception as e:
+                    logger.error(f"Error getting user details: {str(e)}")
+                    # Continue with sign-in even if we can't verify email
             
             # Set the cookies on the response
             AuthService.set_auth_cookies(response, access_token, refresh_token, expires_in)
@@ -652,8 +475,8 @@ class AuthService:
             }
             
         except Exception as e:
-            logger.error(f"Error in custom signin: {str(e)}")
+            logger.error(f"Error in custom_signin: {str(e)}")
             return JSONResponse(
                 status_code=500,
-                content={"error": f"Authentication error: {str(e)}"}
+                content={"error": f"Error in custom_signin: {str(e)}"}
             ) 

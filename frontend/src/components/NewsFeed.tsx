@@ -5,6 +5,7 @@ import { Spinner, Badge, Select, TextInput } from 'flowbite-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { HiSearch } from 'react-icons/hi';
 import { useSearchContext } from '@/context/SearchContext';
+import { useAuth } from '@/context/AuthContext';
 import NewsCard from './NewsCard';
 import { Article } from '@/types/article';
 
@@ -111,15 +112,18 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
   const searchParams = useSearchParams();
   const category = searchParams?.get('category') || initialCategory;
   const query = searchParams?.get('q') || searchQuery;
+  const customCategory = searchParams?.get('custom');
   const [articles, setArticles] = useState<Article[]>(initialArticles ? initialArticles.map(normalizeArticle) : []);
   const [loading, setLoading] = useState(true);
   const [selectedSource, setSelectedSource] = useState<string>(parentSelectedSource || 'all');
   const [allSources, setAllSources] = useState<{ id: string; title: string }[]>([]);
+  const [customCategories, setCustomCategories] = useState<{ id: number; name: string; sources: string[]; categories: string[]; search: string }[]>([]);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const { showSearch, setShowSearch } = useSearchContext();
+  const { user } = useAuth();
 
   const loadMoreArticles = useCallback(async () => {
     if (isFetchingMore || !hasMore) return;
@@ -158,7 +162,7 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
     setHasMore(true);
-  }, [category, selectedSource, query]);
+  }, [category, selectedSource, query, customCategory]);
 
   // Intersection Observer for infinite scrolling
   useEffect(() => {
@@ -181,7 +185,7 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
         observer.unobserve(loaderRef.current);
       }
     };
-  }, [hasMore, isFetchingMore, loading, category, selectedSource, query, loadMoreArticles]);
+  }, [hasMore, isFetchingMore, loading, category, selectedSource, query, customCategory, loadMoreArticles]);
 
   // Initial articles fetch
   useEffect(() => {
@@ -194,6 +198,22 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
       try {
         const queryParams = new URLSearchParams();
         if (query) queryParams.append('search', query);
+        if (customCategory) {
+          // Find the custom category by name
+          const custom = customCategories.find(cat => cat.name === customCategory);
+          if (custom) {
+            // Apply the custom category filters
+            if (custom.sources && custom.sources.length > 0) {
+              queryParams.append('sources', custom.sources.join(','));
+            }
+            if (custom.categories && custom.categories.length > 0) {
+              queryParams.append('categories', custom.categories.join(','));
+            }
+            if (custom.search) {
+              queryParams.append('search', custom.search);
+            }
+          }
+        }
         queryParams.append('limit', BATCH_SIZE.toString());
 
         const response = await fetch(`${API_BASE}/articles?${queryParams.toString()}`, {
@@ -216,7 +236,7 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
     };
 
     fetchInitialArticles();
-  }, [query, onSourceChange]);
+  }, [query, customCategory, customCategories, onSourceChange]);
 
   useEffect(() => {
     if (parentSelectedSource && parentSelectedSource !== selectedSource) {
@@ -264,6 +284,26 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
     };
     fetchSources();
   }, []);
+
+  // Fetch user's custom categories if logged in
+  useEffect(() => {
+    if (user) {
+      const fetchCustomCategories = async () => {
+        try {
+          const res = await fetch('/api/user/custom-categories', {
+            credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setCustomCategories(data);
+          }
+        } catch (error) {
+          console.error('Error fetching custom categories:', error);
+        }
+      };
+      fetchCustomCategories();
+    }
+  }, [user]);
 
   if (loading) return <div className="flex justify-center items-center h-64"><Spinner /></div>;
 
@@ -314,23 +354,59 @@ function NewsFeedContent({ initialCategory, searchQuery, selectedSource: parentS
             ))}
           </Select>
           <Select
-            value={category || ''}
+            value={customCategory || category || ''}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
               // Update URL to reflect the category filter
               const params = new URLSearchParams(searchParams?.toString() || '');
-              if (e.target.value) {
-                params.set('category', e.target.value);
-              } else {
-                params.delete('category');
+              const value = e.target.value;
+              
+              // Clear both custom and category parameters
+              params.delete('custom');
+              params.delete('category');
+              
+              // Set the appropriate parameter based on the selection
+              if (value) {
+                if (value.startsWith('custom:')) {
+                  params.set('custom', value.substring(7)); // Remove 'custom:' prefix
+                } else {
+                  params.set('category', value);
+                }
               }
+              
               router.push(`/?${params.toString()}`);
             }}
               className="w-full md:w-48 bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
           >
             <option value="" className="bg-white dark:bg-gray-800 dark:text-gray-200">All Categories</option>
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat.toLowerCase()} className="bg-white dark:bg-gray-800 dark:text-gray-200">{cat}</option>
-            ))}
+            
+            {/* Custom Categories Group */}
+            {customCategories.length > 0 && (
+              <optgroup label="Custom Categories" className="bg-white dark:bg-gray-800 dark:text-gray-200">
+                {customCategories.map(cat => (
+                  <option 
+                    key={`custom-${cat.id}`} 
+                    value={`custom:${cat.name}`} 
+                    className="bg-white dark:bg-gray-800 dark:text-gray-200"
+                    selected={customCategory === cat.name}
+                  >
+                    {cat.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            
+            {/* Standard Categories Group */}
+            <optgroup label="Standard Categories" className="bg-white dark:bg-gray-800 dark:text-gray-200">
+              {CATEGORIES.map(cat => (
+                <option 
+                  key={cat} 
+                  value={cat.toLowerCase()} 
+                  className="bg-white dark:bg-gray-800 dark:text-gray-200"
+                >
+                  {cat}
+                </option>
+              ))}
+            </optgroup>
           </Select>
           </div>
         </div>

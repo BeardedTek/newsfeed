@@ -20,6 +20,7 @@ const defaultOptions: RequestInit = {
  * @returns Promise with the response data
  */
 export async function apiGet<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Ensure we're using a relative URL path
   const url = endpoint.startsWith('/') ? `${API_BASE}${endpoint}` : `${API_BASE}/${endpoint}`;
   
   // Ensure credentials are included
@@ -47,6 +48,7 @@ export async function apiGet<T = any>(endpoint: string, options: RequestInit = {
  * @returns Promise with the response data
  */
 export async function apiPost<T = any>(endpoint: string, data: any, options: RequestInit = {}): Promise<T> {
+  // Ensure we're using a relative URL path
   const url = endpoint.startsWith('/') ? `${API_BASE}${endpoint}` : `${API_BASE}/${endpoint}`;
   
   // Ensure credentials are included
@@ -75,6 +77,7 @@ export async function apiPost<T = any>(endpoint: string, data: any, options: Req
  * @returns Promise with the response data
  */
 export async function apiPut<T = any>(endpoint: string, data: any, options: RequestInit = {}): Promise<T> {
+  // Ensure we're using a relative URL path
   const url = endpoint.startsWith('/') ? `${API_BASE}${endpoint}` : `${API_BASE}/${endpoint}`;
   
   // Ensure credentials are included
@@ -102,6 +105,7 @@ export async function apiPut<T = any>(endpoint: string, data: any, options: Requ
  * @returns Promise with the response data
  */
 export async function apiDelete<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Ensure we're using a relative URL path
   const url = endpoint.startsWith('/') ? `${API_BASE}${endpoint}` : `${API_BASE}/${endpoint}`;
   
   // Ensure credentials are included

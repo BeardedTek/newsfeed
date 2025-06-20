@@ -274,6 +274,13 @@ export function NavbarContent() {
                     >
                       Preferences
                     </Link>
+                    <Link
+                      href="/custom-categories"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Custom Categories
+                    </Link>
                     <button
                       className="block w-full text-left px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 font-medium text-red-600 dark:text-red-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                       onClick={() => {
@@ -431,6 +438,13 @@ export function NavbarContent() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Preferences
+                  </Link>
+                  <Link
+                    href="/custom-categories"
+                    className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Custom Categories
                   </Link>
                   <button
                     onClick={() => {

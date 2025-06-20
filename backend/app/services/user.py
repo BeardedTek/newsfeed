@@ -10,6 +10,9 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.auth.casdoor_sdk import get_casdoor_sdk
 from typing import Optional, Dict, Any, List
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
+from app.models.database import CustomCategory
 
 logger = logging.getLogger(__name__)
 
@@ -418,4 +421,152 @@ class UserService:
             return JSONResponse(
                 status_code=500,
                 content={"error": f"An error occurred: {str(e)}"}
-            ) 
+            )
+
+class CustomCategoryService:
+    """Service for custom category operations."""
+    
+    @staticmethod
+    def get_user_categories(db: Session, user_id: str) -> List[Dict[str, Any]]:
+        """Get all custom categories for a user."""
+        categories = db.query(CustomCategory).filter(CustomCategory.user_id == user_id).all()
+        return [
+            {
+                "id": cat.id,
+                "name": cat.name,
+                "sources": cat.sources,
+                "categories": cat.categories,
+                "search": cat.search,
+                "created_at": cat.created_at,
+                "updated_at": cat.updated_at
+            }
+            for cat in categories
+        ]
+    
+    @staticmethod
+    def get_category(db: Session, category_id: int, user_id: str) -> Dict[str, Any]:
+        """Get a specific custom category."""
+        category = db.query(CustomCategory).filter(
+            and_(CustomCategory.id == category_id, CustomCategory.user_id == user_id)
+        ).first()
+        
+        if not category:
+            raise HTTPException(status_code=404, detail="Custom category not found")
+        
+        return {
+            "id": category.id,
+            "name": category.name,
+            "sources": category.sources,
+            "categories": category.categories,
+            "search": category.search,
+            "created_at": category.created_at,
+            "updated_at": category.updated_at
+        }
+    
+    @staticmethod
+    def create_category(
+        db: Session, 
+        user_id: str, 
+        name: str, 
+        sources: List[str], 
+        categories: List[str], 
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a new custom category."""
+        # Check if a category with this name already exists for the user
+        existing = db.query(CustomCategory).filter(
+            and_(CustomCategory.user_id == user_id, CustomCategory.name == name)
+        ).first()
+        
+        if existing:
+            raise HTTPException(status_code=400, detail="A category with this name already exists")
+        
+        # Create new category
+        category = CustomCategory(
+            user_id=user_id,
+            name=name,
+            sources=sources,
+            categories=categories,
+            search=search
+        )
+        
+        db.add(category)
+        db.commit()
+        db.refresh(category)
+        
+        return {
+            "id": category.id,
+            "name": category.name,
+            "sources": category.sources,
+            "categories": category.categories,
+            "search": category.search,
+            "created_at": category.created_at,
+            "updated_at": category.updated_at
+        }
+    
+    @staticmethod
+    def update_category(
+        db: Session,
+        category_id: int,
+        user_id: str,
+        name: Optional[str] = None,
+        sources: Optional[List[str]] = None,
+        categories: Optional[List[str]] = None,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Update an existing custom category."""
+        category = db.query(CustomCategory).filter(
+            and_(CustomCategory.id == category_id, CustomCategory.user_id == user_id)
+        ).first()
+        
+        if not category:
+            raise HTTPException(status_code=404, detail="Custom category not found")
+        
+        # Check if name is being changed and if it would conflict
+        if name and name != category.name:
+            existing = db.query(CustomCategory).filter(
+                and_(CustomCategory.user_id == user_id, CustomCategory.name == name)
+            ).first()
+            
+            if existing:
+                raise HTTPException(status_code=400, detail="A category with this name already exists")
+            
+            category.name = name
+        
+        # Update other fields if provided
+        if sources is not None:
+            category.sources = sources
+        
+        if categories is not None:
+            category.categories = categories
+        
+        if search is not None:
+            category.search = search
+        
+        db.commit()
+        db.refresh(category)
+        
+        return {
+            "id": category.id,
+            "name": category.name,
+            "sources": category.sources,
+            "categories": category.categories,
+            "search": category.search,
+            "created_at": category.created_at,
+            "updated_at": category.updated_at
+        }
+    
+    @staticmethod
+    def delete_category(db: Session, category_id: int, user_id: str) -> Dict[str, bool]:
+        """Delete a custom category."""
+        category = db.query(CustomCategory).filter(
+            and_(CustomCategory.id == category_id, CustomCategory.user_id == user_id)
+        ).first()
+        
+        if not category:
+            raise HTTPException(status_code=404, detail="Custom category not found")
+        
+        db.delete(category)
+        db.commit()
+        
+        return {"success": True} 
