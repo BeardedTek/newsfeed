@@ -71,7 +71,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: runtime
+      target: production
     command: ["celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "--concurrency=4"]
     env_file:
       - env/backend
@@ -92,7 +92,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: runtime
+      target: production
     command: celery -A app.workers.tasks.celery_app beat --loglevel=info
     env_file:
       - env/backend
