@@ -10,7 +10,7 @@ import traceback
 from app.services.auth import AuthService
 from app.auth.casdoor_sdk import get_current_user, get_casdoor_sdk
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,17 @@ class ProfileUpdateData(BaseModel):
     phone: Optional[str] = None
     address: Optional[List[str]] = None
     avatar: Optional[str] = None
+
+class SignUpData(BaseModel):
+    username: str
+    password: str
+    displayName: str
+    email: EmailStr
+    turnstileToken: str
+
+class SignInData(BaseModel):
+    username: str
+    password: str
 
 @router.post("/token")
 async def token(request: Request):
@@ -133,4 +144,50 @@ async def debug_cookies(request: Request):
         "auth_token_present": "auth_token" in cookies,
         "refresh_token_present": "refresh_token" in cookies,
         "authorization_header": headers.get("authorization", "Not present")
-    } 
+    }
+
+@router.post("/custom-signup")
+async def custom_signup(data: SignUpData):
+    """
+    Custom sign-up endpoint with Turnstile verification and email confirmation requirement
+    """
+    # Verify Turnstile token
+    turnstile_valid = await AuthService.verify_turnstile(data.turnstileToken)
+    if not turnstile_valid:
+        raise HTTPException(status_code=400, detail="Invalid CAPTCHA verification")
+    
+    # Create user with email verification required
+    result = await AuthService.create_user_with_email_verification(
+        username=data.username,
+        password=data.password,
+        display_name=data.displayName,
+        email=data.email
+    )
+    
+    return result
+
+@router.post("/custom-signin")
+async def custom_signin(data: SignInData, response: Response):
+    """
+    Custom sign-in endpoint that checks if email is verified
+    """
+    result = await AuthService.custom_signin(data.username, data.password, response)
+    return result
+
+
+
+@router.post("/verify-email")
+async def verify_email(token: str):
+    """
+    Verify email address with token
+    """
+    result = await AuthService.verify_email(token)
+    return result
+
+@router.post("/resend-verification")
+async def resend_verification(email: EmailStr):
+    """
+    Resend verification email
+    """
+    result = await AuthService.resend_verification_email(email)
+    return result 

@@ -12,6 +12,7 @@ console.log(`Reading template from ${envConfigPath}`);
 let content;
 try {
   content = fs.readFileSync(envConfigPath, 'utf8');
+  console.log('Current content:', content);
 } catch (error) {
   console.error('Error reading env-config.js template:', error);
   
@@ -26,6 +27,8 @@ window.ENV_CONFIG = {
   NEXT_PUBLIC_CASDOOR_ORG_NAME: "__NEXT_PUBLIC_CASDOOR_ORG_NAME__",
   NEXT_PUBLIC_CASDOOR_REDIRECT_URI: "__NEXT_PUBLIC_CASDOOR_REDIRECT_URI__",
   NEXT_PUBLIC_CONTACT_FORM_ACTION: "__NEXT_PUBLIC_CONTACT_FORM_ACTION__",
+  NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE: "__NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE__",
+  NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: "__NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY__",
   TIMESTAMP: new Date().toISOString()
 };`;
   } else {
@@ -41,7 +44,9 @@ const envVarMappings = [
   ['NEXT_PUBLIC_CASDOOR_APP_NAME', 'CASDOOR_APP_NAME'],
   ['NEXT_PUBLIC_CASDOOR_ORG_NAME', 'CASDOOR_ORG_NAME'],
   ['NEXT_PUBLIC_CASDOOR_REDIRECT_URI', 'CASDOOR_REDIRECT_URI'],
-  ['NEXT_PUBLIC_CONTACT_FORM_ACTION', 'CONTACT_FORM_ACTION']
+  ['NEXT_PUBLIC_CONTACT_FORM_ACTION', 'CONTACT_FORM_ACTION'],
+  ['NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE', 'CLOUDFLARE_TURNSTILE_ENABLE'],
+  ['NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY', 'CLOUDFLARE_TURNSTILE_SITE_KEY']
 ];
 
 // Replace each placeholder with its actual environment variable value
@@ -50,6 +55,7 @@ envVarMappings.forEach(([nextPublicVar, plainVar]) => {
   
   // First try with NEXT_PUBLIC_ prefix, then without
   const value = process.env[nextPublicVar] || process.env[plainVar] || '';
+  console.log(`Replacing ${placeholder} with value: ${value}`);
   
   content = content.replace(placeholder, value);
 });
@@ -59,6 +65,7 @@ content = content.replace(/TIMESTAMP: .*,/, `TIMESTAMP: "${new Date().toISOStrin
 
 // Write the updated content back to the file
 try {
+  console.log('Updated content:', content);
   fs.writeFileSync(envConfigPath, content, 'utf8');
   console.log('Successfully updated env-config.js with environment variables');
 } catch (error) {

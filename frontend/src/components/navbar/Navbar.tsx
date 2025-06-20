@@ -103,21 +103,8 @@ export function NavbarContent() {
 
   // Casdoor login redirect handler
   const handleLogin = () => {
-    const serverUrl = env.CASDOOR_SERVER_URL;
-    const clientId = env.CASDOOR_CLIENT_ID;
-    const appName = env.CASDOOR_APP_NAME;
-    const orgName = env.CASDOOR_ORG_NAME;
-    const redirectUri = env.CASDOOR_REDIRECT_URI;
-
-    if (!serverUrl || !clientId || !appName || !orgName || !redirectUri) {
-      alert("Missing Casdoor environment variables. Please check your configuration.");
-      return;
-    }
-
-    // Add current path as a redirect param
-    const currentPath = window.location.pathname + window.location.search;
-    const authorizeUrl = `${serverUrl}/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid+profile+email&state=login&tenant=${encodeURIComponent(orgName)}&application=${encodeURIComponent(appName)}&redirect=${encodeURIComponent(currentPath)}`;
-    window.location.href = authorizeUrl;
+    // Redirect to our custom sign-in page
+    router.push('/signin');
   };
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
