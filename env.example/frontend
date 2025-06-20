@@ -1,15 +1,13 @@
 # App configuration
-APP_URL=https://newsfeed.example.net
+APP_URL=https://newsfeed.example.com
+APP_SECRET=
 
 # Contact Form
-CONTACT_FORM_ACTION=https://formspree.io/f/meoanzpy
+CONTACT_FORM_ACTION=https://formspree.io/f/xxxxxxxx
 
 # Casdoor configuration
-CASDOOR_SERVER_URL=http://auth.example.net:8000
+CASDOOR_SERVER_URL=http://localhost:8000
 CASDOOR_CLIENT_ID=
 CASDOOR_APP_NAME=newsfeed
 CASDOOR_ORG_NAME=newsfeed
-CASDOOR_REDIRECT_URI=https://newsfeed.example.net/callback
-
-CLOUDFLARE_TURNSTILE_ENABLE=false
-CLOUDFLARE_TURNSTILE_SITE_KEY=
+CASDOOR_REDIRECT_URI=https://newsfeed.example.com/callback
