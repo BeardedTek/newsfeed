@@ -34,9 +34,6 @@ FROM node:20-alpine AS runner
 # Set working directory
 WORKDIR /app
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
-
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs && \
@@ -65,10 +62,6 @@ USER nextjs
 
 # Expose the port
 EXPOSE 3000
-
-# Add health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Use start.sh as entrypoint to configure environment variables at runtime
 CMD ["./start.sh"] 

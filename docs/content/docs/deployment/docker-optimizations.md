@@ -92,31 +92,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 RUN chown -R nextjs:nodejs /app
 ```
 
-## Health Checks
-
-All services include health checks for improved reliability:
-
-### Frontend Health Check
-
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
-```
-
-### Backend Health Check
-
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8001/api/health')" || exit 1
-```
-
-### Worker Health Check
-
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD celery -A app.workers.tasks inspect ping || exit 1
-```
-
 ## Performance Optimizations
 
 ### Minimal Base Images
@@ -164,7 +139,6 @@ This approach provides flexibility for deploying the same image to different env
 The `docker-compose.yml` file integrates all these optimizations:
 
 - Specifies the correct build target for multi-stage builds
-- Configures health checks for all services
 - Sets up proper dependency chains between services
 - Configures logging with rotation
 
@@ -172,7 +146,6 @@ The `docker-compose.yml` file integrates all these optimizations:
 
 - Use multi-stage builds to minimize image size
 - Run containers as non-root users
-- Implement health checks for all services
 - Use minimal base images (Alpine/slim)
 - Optimize dependency installation
 - Copy only necessary files at each stage

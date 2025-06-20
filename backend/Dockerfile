@@ -55,8 +55,4 @@ EXPOSE 8001
 # Switch to non-root user
 USER appuser
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8001/api/health')" || exit 1
-
 # Entrypoint/command is set by docker-compose for API or worker 

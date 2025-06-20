@@ -21,7 +21,6 @@ The Nginx configuration is defined in `nginx/proxy.conf` and is used to:
 - **Built-in documentation**: Documentation is built directly in the Dockerfile using multi-stage builds
 - **Performance optimizations**: Increased worker connections, file descriptors, and TCP optimizations
 - **Security enhancements**: Runs as non-root user, includes security headers
-- **Health checks**: Automatic monitoring of service health
 
 ## Running as Non-Root User
 

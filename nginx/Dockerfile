@@ -19,9 +19,5 @@ COPY --from=hugo-builder /src/public /docs/public
 # Copy custom nginx config
 COPY nginx/proxy.conf /etc/nginx/nginx.conf
 
-# Set up healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/docs/ || exit 1
-
 # Expose HTTP port
 EXPOSE 80

@@ -196,7 +196,6 @@ The docker-compose.yml file is configured for production use with:
 
 - Optimized service configurations with multi-stage Docker builds
 - Non-root user execution for improved security
-- Comprehensive health checks for all services
 - Proper logging with rotation
 - Improved performance settings
 - Proper dependency chains between services
