@@ -1,5 +1,5 @@
 # Stage 1: Hugo build
-FROM hugomods/hugo:std-0.147.8 AS hugo-builder
+FROM hugomods/hugo:ext-0.147.8 AS hugo-builder
 
 # Set working directory
 WORKDIR /src
