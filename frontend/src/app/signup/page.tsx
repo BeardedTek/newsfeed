@@ -32,7 +32,7 @@ export default function SignUpPage() {
   // Initialize Turnstile when component mounts
   useEffect(() => {
     // Check if Turnstile is enabled
-    const isTurnstileEnabled = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false';
+    const isTurnstileEnabled = window.ENV_CONFIG?.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false';
     
     // If Turnstile is disabled, skip initialization
     if (!isTurnstileEnabled) {
@@ -50,7 +50,7 @@ export default function SignUpPage() {
 
       // Render the Turnstile widget
       turnstileWidgetId.current = window.turnstile.render(turnstileContainer.current, {
-        sitekey: process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || '',
+        sitekey: window.ENV_CONFIG?.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || '',
         callback: (token: string) => {
           setTurnstileToken(token);
         },
@@ -96,7 +96,7 @@ export default function SignUpPage() {
           // Re-render the widget with the new theme
           if (turnstileContainer.current) {
             turnstileWidgetId.current = window.turnstile.render(turnstileContainer.current, {
-              sitekey: process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || '',
+              sitekey: window.ENV_CONFIG?.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || '',
               callback: (token: string) => {
                 setTurnstileToken(token);
               },
@@ -135,7 +135,7 @@ export default function SignUpPage() {
     }
 
     // Check if Turnstile is enabled
-    const isTurnstileEnabled = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false';
+    const isTurnstileEnabled = window.ENV_CONFIG?.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false';
     
     // Only require token if Turnstile is enabled
     if (isTurnstileEnabled && !turnstileToken) {
@@ -188,7 +188,7 @@ export default function SignUpPage() {
   return (
     <>
       {/* Load Cloudflare Turnstile script only if enabled */}
-      {process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false' && (
+      {window.ENV_CONFIG?.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false' && (
         <Script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
           async
@@ -272,6 +272,7 @@ export default function SignUpPage() {
                     placeholder="••••••••" 
                     className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                     required 
+                    autoComplete="new-password"
                   />
                 </div>
                 <div>
@@ -285,11 +286,12 @@ export default function SignUpPage() {
                     placeholder="••••••••" 
                     className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                     required 
+                    autoComplete="new-password"
                   />
                 </div>
                 
                 {/* Cloudflare Turnstile - only show if enabled */}
-                {process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false' && (
+                {window.ENV_CONFIG?.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false' && (
                   <div>
                     <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">CAPTCHA Verification</label>
                     <div ref={turnstileContainer} className="flex justify-center"></div>
@@ -298,7 +300,7 @@ export default function SignUpPage() {
                 
                 <button 
                   type="submit" 
-                  disabled={loading || (process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false' && !turnstileToken)}
+                  disabled={loading || (window.ENV_CONFIG?.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE !== 'false' && !turnstileToken)}
                   className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 disabled:opacity-50"
                 >
                   {loading ? (
