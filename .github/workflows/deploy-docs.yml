@@ -36,14 +36,22 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=%B)
           echo "Commit message: $COMMIT_MSG"
           
+          # Initialize skip flag
+          SKIP="false"
+          
           # Check for skip phrases
           if echo "$COMMIT_MSG" | grep -qE 'NO_CICD|NO_CICD_DOCS'; then
             echo "Skipping workflow due to commit message containing NO_CICD or NO_CICD_DOCS"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "No skip phrase found, proceeding with workflow"
-            echo "skip=false" >> $GITHUB_OUTPUT
+            SKIP="true"
           fi
+          
+          # Check for CICD_ONLY flags that don't include docs
+          if echo "$COMMIT_MSG" | grep -qE 'CICD_ONLY_FRONTEND|CICD_ONLY_BACKEND|CICD_ONLY_NGINX'; then
+            echo "Skipping docs workflow due to commit message containing CICD_ONLY_* for a specific component"
+            SKIP="true"
+          fi
+          
+          echo "skip=$SKIP" >> $GITHUB_OUTPUT
 
   build:
     needs: check-commit-message

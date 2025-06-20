@@ -18,6 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       skip: ${{ steps.check.outputs.skip }}
+      skip_frontend: ${{ steps.check.outputs.skip_frontend }}
+      skip_backend: ${{ steps.check.outputs.skip_backend }}
+      skip_nginx: ${{ steps.check.outputs.skip_nginx }}
+      only_frontend: ${{ steps.check.outputs.only_frontend }}
+      only_backend: ${{ steps.check.outputs.only_backend }}
+      only_nginx: ${{ steps.check.outputs.only_nginx }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,18 +43,76 @@ jobs:
           fi
           echo "Commit message: $COMMIT_MSG"
           
-          # Check for skip phrases
+          # Initialize flags
+          SKIP="false"
+          SKIP_FRONTEND="false"
+          SKIP_BACKEND="false"
+          SKIP_NGINX="false"
+          ONLY_FRONTEND="false"
+          ONLY_BACKEND="false"
+          ONLY_NGINX="false"
+          
+          # Check for skip all CI/CD
           if echo "$COMMIT_MSG" | grep -qE 'NO_CICD|NO_CICD_DOCKER'; then
-            echo "Skipping workflow due to commit message containing NO_CICD or NO_CICD_DOCKER"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "No skip phrase found, proceeding with workflow"
-            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "Skipping all Docker workflows"
+            SKIP="true"
           fi
+          
+          # Check for component-specific skips
+          if echo "$COMMIT_MSG" | grep -qE 'NO_CICD_FRONTEND'; then
+            echo "Skipping frontend Docker workflow"
+            SKIP_FRONTEND="true"
+          fi
+          
+          if echo "$COMMIT_MSG" | grep -qE 'NO_CICD_BACKEND'; then
+            echo "Skipping backend Docker workflow"
+            SKIP_BACKEND="true"
+          fi
+          
+          if echo "$COMMIT_MSG" | grep -qE 'NO_CICD_NGINX'; then
+            echo "Skipping nginx Docker workflow"
+            SKIP_NGINX="true"
+          fi
+          
+          # Check for only flags
+          if echo "$COMMIT_MSG" | grep -qE 'CICD_ONLY_FRONTEND'; then
+            echo "Running only frontend Docker workflow"
+            ONLY_FRONTEND="true"
+            SKIP_BACKEND="true"
+            SKIP_NGINX="true"
+          fi
+          
+          if echo "$COMMIT_MSG" | grep -qE 'CICD_ONLY_BACKEND'; then
+            echo "Running only backend Docker workflow"
+            ONLY_BACKEND="true"
+            SKIP_FRONTEND="true"
+            SKIP_NGINX="true"
+          fi
+          
+          if echo "$COMMIT_MSG" | grep -qE 'CICD_ONLY_NGINX'; then
+            echo "Running only nginx Docker workflow"
+            ONLY_NGINX="true"
+            SKIP_FRONTEND="true"
+            SKIP_BACKEND="true"
+          fi
+          
+          if echo "$COMMIT_MSG" | grep -qE 'CICD_ONLY_DOCS'; then
+            echo "Skipping all Docker workflows, running only docs"
+            SKIP="true"
+          fi
+          
+          # Set outputs
+          echo "skip=$SKIP" >> $GITHUB_OUTPUT
+          echo "skip_frontend=$SKIP_FRONTEND" >> $GITHUB_OUTPUT
+          echo "skip_backend=$SKIP_BACKEND" >> $GITHUB_OUTPUT
+          echo "skip_nginx=$SKIP_NGINX" >> $GITHUB_OUTPUT
+          echo "only_frontend=$ONLY_FRONTEND" >> $GITHUB_OUTPUT
+          echo "only_backend=$ONLY_BACKEND" >> $GITHUB_OUTPUT
+          echo "only_nginx=$ONLY_NGINX" >> $GITHUB_OUTPUT
 
-  build-and-push:
+  build-and-push-nginx:
     needs: check-commit-message
-    if: ${{ needs.check-commit-message.outputs.skip != 'true' }}
+    if: ${{ needs.check-commit-message.outputs.skip != 'true' && needs.check-commit-message.outputs.skip_nginx != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,19 +124,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ env.NGINX_IMAGE_NAME }}
-            ${{ env.FRONTEND_IMAGE_NAME }}
-            ${{ env.BACKEND_IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
-            type=sha,format=short
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
@@ -91,8 +142,29 @@ jobs:
             ${{ env.NGINX_IMAGE_NAME }}:latest
             ${{ env.NGINX_IMAGE_NAME }}:${{ github.ref_name }}
             ${{ env.NGINX_IMAGE_NAME }}:${{ github.sha }}
+
+  build-and-push-frontend:
+    needs: check-commit-message
+    if: ${{ needs.check-commit-message.outputs.skip != 'true' && needs.check-commit-message.outputs.skip_frontend != 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       
-      # Build and push frontend image
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:
@@ -104,7 +176,28 @@ jobs:
             ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}
             ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
       
-      # Build and push backend image
+  build-and-push-backend:
+    needs: check-commit-message
+    if: ${{ needs.check-commit-message.outputs.skip != 'true' && needs.check-commit-message.outputs.skip_backend != 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:

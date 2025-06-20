@@ -8,7 +8,6 @@ CONTACT_FORM_ACTION=https://formspree.io/f/meoanzpy
 # Casdoor configuration
 CASDOOR_SERVER_URL=http://localhost:8000
 CASDOOR_CLIENT_ID=55fbca55d283f686d4b2
-CASDOOR_CLIENT_SECRET=0156250fec5e5362fae3393a57086a1f23f1a49e
 CASDOOR_APP_NAME=newsfeed
 CASDOOR_ORG_NAME=newsfeed
 CASDOOR_REDIRECT_URI=http://localhost:8880/callback

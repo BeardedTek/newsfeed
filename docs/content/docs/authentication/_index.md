@@ -71,7 +71,6 @@ The frontend is configured through environment variables:
 # Casdoor configuration
 NEXT_PUBLIC_CASDOOR_SERVER_URL=http://localhost:8000
 NEXT_PUBLIC_CASDOOR_CLIENT_ID=your-client-id
-NEXT_PUBLIC_CASDOOR_CLIENT_SECRET=your-client-secret
 NEXT_PUBLIC_CASDOOR_APP_NAME=newsfeed
 NEXT_PUBLIC_CASDOOR_ORG_NAME=newsfeed
 NEXT_PUBLIC_CASDOOR_REDIRECT_URI=http://localhost:8880/callback

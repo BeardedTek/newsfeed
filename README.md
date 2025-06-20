@@ -249,15 +249,29 @@ This approach simplifies deployment by eliminating the need for separate build s
 
 The project includes GitHub Actions workflows for continuous integration and deployment. See the [CI/CD documentation](docs/content/docs/deployment/ci-cd.md) for more information.
 
-#### Skipping CI/CD Workflows
+#### Controlling CI/CD Workflows
 
-You can skip CI/CD workflows by including specific phrases in your commit messages:
+You can control CI/CD workflows by including specific phrases in your commit messages:
 
+##### Skip All Workflows
 - `NO_CICD`: Skips all CI/CD workflows
+
+##### Skip Specific Workflows
 - `NO_CICD_DOCKER`: Skips only the Docker build and publish workflow
 - `NO_CICD_DOCS`: Skips only the documentation deployment workflow
+- `NO_CICD_FRONTEND`: Skips only the frontend Docker build/push
+- `NO_CICD_BACKEND`: Skips only the backend Docker build/push
+- `NO_CICD_NGINX`: Skips only the nginx Docker build/push
 
-Example:
+##### Run Only Specific Workflows
+- `CICD_ONLY_FRONTEND`: Only runs the frontend Docker build/push
+- `CICD_ONLY_BACKEND`: Only runs the backend Docker build/push
+- `CICD_ONLY_NGINX`: Only runs the nginx Docker build/push
+- `CICD_ONLY_DOCS`: Only runs the GitHub Pages documentation deployment
+
+Examples:
 ```bash
 git commit -m "Update README [NO_CICD]"  # Skips all workflows
+git commit -m "Fix frontend bug [CICD_ONLY_FRONTEND]"  # Only builds frontend
+git commit -m "Update docs [CICD_ONLY_DOCS]"  # Only deploys docs
 ```

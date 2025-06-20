@@ -30,6 +30,50 @@ The following Docker images are built and published:
 - `beardedtek/newsfeed`: The frontend Next.js application
 - `beardedtek/newsfeed-backend`: The backend FastAPI application (used for both the API and worker containers)
 
+## Documentation Deployment
+
+In addition to the Docker image workflow, there is also a GitHub Actions workflow for deploying the documentation to GitHub Pages. This workflow is defined in `.github/workflows/deploy-docs.yml` and is triggered when changes are made to the `docs/` directory.
+
+The documentation is deployed to GitHub Pages at: https://beardedtek.github.io/newsfeed/
+
+## Skipping CI/CD Workflows
+
+You can control CI/CD workflows by including specific phrases in your commit messages:
+
+### Skip All Workflows
+
+- `NO_CICD`: Skips all CI/CD workflows
+
+### Skip Specific Workflows
+
+- `NO_CICD_DOCKER`: Skips only the Docker build and publish workflow
+- `NO_CICD_DOCS`: Skips only the documentation deployment workflow
+- `NO_CICD_FRONTEND`: Skips only the frontend Docker build/push
+- `NO_CICD_BACKEND`: Skips only the backend Docker build/push
+- `NO_CICD_NGINX`: Skips only the nginx Docker build/push
+
+### Run Only Specific Workflows
+
+- `CICD_ONLY_FRONTEND`: Only runs the frontend Docker build/push
+- `CICD_ONLY_BACKEND`: Only runs the backend Docker build/push
+- `CICD_ONLY_NGINX`: Only runs the nginx Docker build/push
+- `CICD_ONLY_DOCS`: Only runs the GitHub Pages documentation deployment
+
+Examples:
+```bash
+git commit -m "Update README [NO_CICD]"  # Skips all workflows
+git commit -m "Fix typo in docs [NO_CICD_DOCKER]"  # Only skips Docker workflow
+git commit -m "Update Docker config [NO_CICD_DOCS]"  # Only skips docs workflow
+git commit -m "Update frontend only [CICD_ONLY_FRONTEND]"  # Only builds frontend
+git commit -m "Fix backend bug [NO_CICD_FRONTEND]"  # Skips frontend build
+```
+
+This feature is useful when:
+- Making minor documentation changes without triggering a full Docker build
+- Testing changes to Docker configurations without triggering documentation deployment
+- Skipping all CI/CD for very minor changes or work-in-progress commits
+- Building only the components that have changed to save CI/CD time and resources
+
 ## Build Process
 
 The build process uses Docker's multi-stage builds to simplify deployment:

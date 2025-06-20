@@ -25,7 +25,6 @@ export default function EnvLoader({ children }: EnvLoaderProps) {
     const requiredVars = [
       'NEXT_PUBLIC_CASDOOR_SERVER_URL',
       'NEXT_PUBLIC_CASDOOR_CLIENT_ID',
-      'NEXT_PUBLIC_CASDOOR_CLIENT_SECRET',
       'NEXT_PUBLIC_CASDOOR_APP_NAME',
       'NEXT_PUBLIC_CASDOOR_ORG_NAME',
       'NEXT_PUBLIC_CASDOOR_REDIRECT_URI'
