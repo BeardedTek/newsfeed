@@ -17,9 +17,6 @@ class ProfileUpdateRequest(BaseModel):
     address: Optional[List[str]] = None
     avatar: Optional[str] = None
 
-class AvatarGenerationRequest(BaseModel):
-    prompt: Optional[str] = None
-
 class CustomCategoryCreate(BaseModel):
     name: str
     sources: List[str]
@@ -86,21 +83,6 @@ async def use_gravatar(
     
     user_id = current_user.get("name")
     return await UserService.use_gravatar(user_id, current_user)
-
-@router.post("/generate-avatar")
-async def generate_avatar(
-    data: AvatarGenerationRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """Generate an avatar for the current user."""
-    if not current_user:
-        return JSONResponse(
-            status_code=401,
-            content={"error": "Not authenticated"}
-        )
-    
-    user_id = current_user.get("name")
-    return await UserService.generate_avatar(user_id, data.prompt, current_user)
 
 @router.get("/custom-categories")
 async def get_user_custom_categories(

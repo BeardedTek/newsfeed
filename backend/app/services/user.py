@@ -299,90 +299,17 @@ class UserService:
     async def use_gravatar(user_id: str, current_user: Dict[str, Any]):
         """Set the user's avatar to their Gravatar."""
         request_id = __import__('os').urandom(4).hex()
-        logger.info(f"[{request_id}] Setting Gravatar as avatar for user: {user_id}")
+        logger.info(f"[{request_id}] Setting Gravatar for user: {user_id}")
         
         # Verify the user is updating their own avatar
         if user_id != current_user.get("name") and not UserService.is_admin(current_user):
-            logger.warning(f"[{request_id}] Unauthorized avatar update attempt: {user_id} by {current_user.get('name')}")
+            logger.warning(f"[{request_id}] Unauthorized Gravatar setting attempt: {user_id} by {current_user.get('name')}")
             return JSONResponse(
                 status_code=403,
                 content={"error": "You can only update your own avatar"}
             )
         
         try:
-            # Get the SDK instance
-            sdk = get_casdoor_sdk()
-            
-            # Get the username from the user_id
-            username = UserService.get_user_id_for_get(user_id, request_id)
-            
-            # Get the user from Casdoor using the username format
-            casdoor_user = sdk.get_user(username)
-            
-            if not casdoor_user:
-                logger.error(f"[{request_id}] User not found in Casdoor: {username}")
-                return JSONResponse(
-                    status_code=404,
-                    content={"error": "User not found"}
-                )
-            
-            # Check if the user has an email
-            if not hasattr(casdoor_user, 'email') or not casdoor_user.email:
-                logger.error(f"[{request_id}] User has no email address: {username}")
-                return JSONResponse(
-                    status_code=400,
-                    content={"error": "User has no email address for Gravatar"}
-                )
-            
-            # Get the Gravatar URL
-            gravatar_url = UserService.get_gravatar_url(casdoor_user.email)
-            
-            # Update the user's avatar URL in Casdoor
-            setattr(casdoor_user, "avatar", gravatar_url)
-            
-            # Update the user in Casdoor
-            result = sdk.update_user(casdoor_user)
-            
-            if not result:
-                logger.error(f"[{request_id}] Failed to update avatar URL for user: {username}")
-                return JSONResponse(
-                    status_code=500,
-                    content={"error": "Failed to update avatar URL"}
-                )
-            
-            logger.info(f"[{request_id}] Successfully set Gravatar as avatar for user: {username}")
-            return {"success": True, "avatarUrl": gravatar_url}
-        
-        except Exception as e:
-            logger.error(f"[{request_id}] Error setting Gravatar: {str(e)}")
-            logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
-            return JSONResponse(
-                status_code=500,
-                content={"error": f"An error occurred: {str(e)}"}
-            )
-    
-    @staticmethod
-    async def generate_avatar(user_id: str, prompt: Optional[str], current_user: Dict[str, Any]):
-        """Generate an avatar for the user."""
-        request_id = __import__('os').urandom(4).hex()
-        logger.info(f"[{request_id}] Generating avatar for user: {user_id}")
-        
-        # Verify the user is updating their own avatar
-        if user_id != current_user.get("name") and not UserService.is_admin(current_user):
-            logger.warning(f"[{request_id}] Unauthorized avatar generation attempt: {user_id} by {current_user.get('name')}")
-            return JSONResponse(
-                status_code=403,
-                content={"error": "You can only update your own avatar"}
-            )
-        
-        try:
-            # For now, just generate a random avatar using DiceBear
-            # In the future, this could be replaced with an AI-generated avatar
-            avatar_style = random.choice(["adventurer", "avataaars", "bottts", "identicon", "jdenticon", "gridy", "micah"])
-            seed = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
-            
-            avatar_url = f"https://api.dicebear.com/7.x/{avatar_style}/svg?seed={seed}"
-            
             # Get the SDK instance
             sdk = get_casdoor_sdk()
             
@@ -399,8 +326,21 @@ class UserService:
                     content={"error": "User not found"}
                 )
             
+            # Get the user's email
+            email = getattr(casdoor_user, "email", "")
+            
+            if not email:
+                logger.error(f"[{request_id}] User has no email: {username}")
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "User has no email address"}
+                )
+            
+            # Generate a Gravatar URL
+            gravatar_url = UserService.get_gravatar_url(email)
+            
             # Update the user's avatar URL in Casdoor
-            setattr(casdoor_user, "avatar", avatar_url)
+            setattr(casdoor_user, "avatar", gravatar_url)
             
             # Update the user in Casdoor
             result = sdk.update_user(casdoor_user)
@@ -412,11 +352,11 @@ class UserService:
                     content={"error": "Failed to update avatar URL"}
                 )
             
-            logger.info(f"[{request_id}] Successfully generated avatar for user: {username}")
-            return {"success": True, "avatarUrl": avatar_url}
+            logger.info(f"[{request_id}] Successfully set Gravatar for user: {username}")
+            return {"success": True, "avatarUrl": gravatar_url}
             
         except Exception as e:
-            logger.error(f"[{request_id}] Error generating avatar: {str(e)}")
+            logger.error(f"[{request_id}] Error setting Gravatar: {str(e)}")
             logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
             return JSONResponse(
                 status_code=500,

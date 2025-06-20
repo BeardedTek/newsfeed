@@ -108,7 +108,7 @@ export function NavbarContent() {
   };
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const isNewsfeed = pathname === '/' && (!searchParams || searchParams.size === 0 || searchParams.has('q'));
+  const isNewsfeed = pathname === '/';
 
   return (
     <FlowbiteNavbar fluid className="sticky top-0 z-50 border-b bg-white dark:bg-gray-900">
@@ -156,11 +156,11 @@ export function NavbarContent() {
               onClick={() => {
                 setAboutOpen((open) => !open);
                 setAdminOpen(false);
+                setUserMenuOpen(false);
               }}
               aria-haspopup="true"
               aria-expanded={aboutOpen}
             >
-              <HiInformationCircle className="w-5 h-5 md:mr-2" />
               <span className="hidden md:inline">About</span>
               <HiChevronDown className="w-4 h-4 ml-1" />
             </button>
@@ -203,11 +203,11 @@ export function NavbarContent() {
                 onClick={() => {
                   setAdminOpen((open) => !open);
                   setAboutOpen(false);
+                  setUserMenuOpen(false);
                 }}
                 aria-haspopup="true"
                 aria-expanded={adminOpen}
               >
-                <HiUserGroup className="w-5 h-5 md:mr-2" />
                 <span className="hidden md:inline">Admin</span>
                 <HiChevronDown className="w-4 h-4 ml-1" />
               </button>
@@ -296,12 +296,11 @@ export function NavbarContent() {
             </div>
           ) : (
             <button
-              className="flex items-center px-4 py-2 ml-2 text-white bg-blue-500 hover:bg-blue-600 rounded shadow-none border-none transition-colors"
+              className="flex items-center px-4 py-2 ml-2 text-white bg-blue-800 hover:bg-blue-700 rounded shadow-none border-none transition-colors"
               onClick={handleLogin}
               aria-label="Login"
             >
-              <HiShieldCheck className="w-5 h-5 md:mr-2" />
-              <span className="hidden md:inline">Login</span>
+              <span className="hidden md:inline">Sign In</span>
             </button>
           )}
         </div>
@@ -331,7 +330,6 @@ export function NavbarContent() {
                 <Accordion.Panel key="about">
                   <Accordion.Title className="px-4 justify-left text-left font-medium first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-800 flex items-center gap-2 px-0 py-3 text-gray-700 dark:text-gray-200 w-full">
                     <h2 className="px-4 flex items-center gap-2">
-                      <HiInformationCircle className="w-5 h-5" />
                       <span className="flex-1 text-left">About</span>
                     </h2>
                   </Accordion.Title>
@@ -370,7 +368,6 @@ export function NavbarContent() {
                 <Accordion.Panel key="admin">
                   <Accordion.Title className="px-4 justify-left text-left font-medium first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-800 flex items-center gap-2 px-0 py-3 text-gray-700 dark:text-gray-200 w-full">
                     <h2 className="px-4 flex items-center gap-2">
-                      <HiUserGroup className="w-5 h-5" />
                       <span className="flex-1 text-left">Admin</span>
                     </h2>
                   </Accordion.Title>
@@ -400,10 +397,9 @@ export function NavbarContent() {
             {!user ? (
               <button
                 onClick={handleLogin}
-                className="flex items-center mx-4 my-2 px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded shadow-none border-none transition-colors"
+                className="flex items-center mx-4 my-2 px-4 py-2 text-white bg-blue-800 hover:bg-blue-700 rounded shadow-none border-none transition-colors"
               >
-                <HiShieldCheck className="w-5 h-5 mr-2" />
-                <span>Login</span>
+                <span>Sign In</span>
               </button>
             ) : (
               <div className="px-4 py-2">

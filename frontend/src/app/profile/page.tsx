@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useEnv } from '@/context/AuthContext';
-import { HiUpload, HiRefresh, HiPencil, HiKey, HiSave, HiX, HiUser } from 'react-icons/hi';
+import { HiUpload, HiPencil, HiKey, HiSave, HiX, HiUser } from 'react-icons/hi';
 import Image from 'next/image';
 
 export default function ProfilePage() {
@@ -25,8 +25,6 @@ export default function ProfilePage() {
     text: string;
   }>({ type: '', text: '' });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [promptText, setPromptText] = useState<string>('');
-  const [isGeneratingAvatar, setIsGeneratingAvatar] = useState<boolean>(false);
   
   // Initialize form with user data
   useEffect(() => {
@@ -149,51 +147,6 @@ export default function ProfilePage() {
       setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to set Gravatar' });
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  const handleGenerateAvatar = async () => {
-    try {
-      setIsGeneratingAvatar(true);
-      setMessage({ type: '', text: '' });
-      
-      const response = await fetch('/api/user/generate-avatar', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: promptText || undefined }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.warning) {
-        console.warn('Avatar generation warning:', data.warning);
-        setMessage({ type: 'warning', text: data.warning });
-      }
-      
-      // Use avatarData from the response (new format) or fall back to avatarUrl (old format)
-      setAvatarPreview(data.avatarData || data.avatarUrl);
-      
-      if (data.success) {
-        setMessage(prev => ({ 
-          type: prev.type === 'warning' ? 'warning' : 'success', 
-          text: prev.type === 'warning' 
-            ? `${prev.text} Click Save to update your profile.` 
-            : 'Avatar generated! Click Save to update your profile.' 
-        }));
-      }
-    } catch (error) {
-      console.error('Error generating avatar:', error);
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to generate avatar' });
-    } finally {
-      setIsGeneratingAvatar(false);
     }
   };
   
@@ -334,39 +287,6 @@ export default function ProfilePage() {
                     </p>
                   </div>
                 )}
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Generate Avatar
-                  </label>
-                  <div className="flex">
-                    <input
-                      type="text"
-                      placeholder="Describe your avatar"
-                      value={promptText}
-                      onChange={(e) => setPromptText(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      disabled={isGeneratingAvatar}
-                    />
-                    <button
-                      onClick={handleGenerateAvatar}
-                      className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-r-md flex items-center"
-                      disabled={isGeneratingAvatar}
-                    >
-                      {isGeneratingAvatar ? (
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <HiRefresh className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Generate an avatar using AI or a fallback service
-                  </p>
-                </div>
               </div>
             )}
           </div>
