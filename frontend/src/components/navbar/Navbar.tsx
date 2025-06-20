@@ -310,7 +310,7 @@ export function NavbarContent() {
       {mobileMenuOpen && (
         <div className="relative w-full bg-white dark:bg-gray-900 shadow-md md:hidden z-50 overflow-y-auto max-h-screen">
           <div className="flex flex-col py-2">
-          {/* Search button only on homepage or when searching */}
+          {/* 1. Search button only on homepage or when searching */}
           {isNewsfeed && (
             <button
               type="button"
@@ -323,46 +323,74 @@ export function NavbarContent() {
               <span>Search</span>
             </button>
           )}
-          {/* Accordion panels for About and Admin */}
+          
+          {/* 2. User profile or login button for mobile */}
+          {!user ? (
+            <button
+              onClick={handleLogin}
+              className="flex items-center mx-4 my-2 px-4 py-2 text-white bg-blue-800 hover:bg-blue-700 rounded shadow-none border-none transition-colors"
+            >
+              <span>Sign In</span>
+            </button>
+          ) : (
+            <div className="px-4 py-2">
+              <div className="flex items-center gap-3 mb-2">
+                {user.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={`${user.displayName || user.name}'s avatar`} 
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                    {(user.displayName || user.name || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.displayName || user.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                </div>
+              </div>
+              <div className="space-y-1 mt-3 border-t pt-2 dark:border-gray-700">
+                <Link
+                  href="/profile"
+                  className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link
+                  href="/preferences"
+                  className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Preferences
+                </Link>
+                <Link
+                  href="/custom-categories"
+                  className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Custom Categories
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="block w-full text-left px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 font-medium text-red-600 dark:text-red-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* 3 & 4. Accordion panels for Admin and About */}
           {(() => {
-            const mobilePanels = [
-              (
-                <Accordion.Panel key="about">
-                  <Accordion.Title className="px-4 justify-left text-left font-medium first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-800 flex items-center gap-2 px-0 py-3 text-gray-700 dark:text-gray-200 w-full">
-                    <h2 className="px-4 flex items-center gap-2">
-                      <span className="flex-1 text-left">About</span>
-                    </h2>
-                  </Accordion.Title>
-                  <Accordion.Content className="py-1 px-0">
-                    {ABOUT_LINKS.map((link) => (
-                      link.external ? (
-                        <a
-                          key={link.href}
-                          href={link.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {link.icon && <link.icon className="w-4 h-4 mr-2" />}
-                          {link.label}
-                        </a>
-                      ) : (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {link.icon && <link.icon className="w-4 h-4 mr-2" />}
-                          {link.label}
-                        </Link>
-                      )
-                    ))}
-                  </Accordion.Content>
-                </Accordion.Panel>
-              )
-            ];
+            const mobilePanels: JSX.Element[] = [];
+            
+            // 3. Admin menu (if admin)
             if (isAdmin) {
               mobilePanels.push(
                 <Accordion.Panel key="admin">
@@ -387,83 +415,62 @@ export function NavbarContent() {
                 </Accordion.Panel>
               );
             }
+            
+            // 4. About menu
+            mobilePanels.push(
+              <Accordion.Panel key="about">
+                <Accordion.Title className="px-4 justify-left text-left font-medium first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-800 flex items-center gap-2 px-0 py-3 text-gray-700 dark:text-gray-200 w-full">
+                  <h2 className="px-4 flex items-center gap-2">
+                    <span className="flex-1 text-left">About</span>
+                  </h2>
+                </Accordion.Title>
+                <Accordion.Content className="py-1 px-0">
+                  {ABOUT_LINKS.map((link) => (
+                    link.external ? (
+                      <a
+                        key={link.href}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {link.icon && <link.icon className="w-4 h-4 mr-2" />}
+                        {link.label}
+                      </Link>
+                    )
+                  ))}
+                </Accordion.Content>
+              </Accordion.Panel>
+            );
+            
             return (
               <Accordion collapseAll className="mb-0 border-0 rounded-none w-full">
                 {mobilePanels}
               </Accordion>
             );
           })()}
-            {/* User profile or login button for mobile */}
-            {!user ? (
-              <button
-                onClick={handleLogin}
-                className="flex items-center mx-4 my-2 px-4 py-2 text-white bg-blue-800 hover:bg-blue-700 rounded shadow-none border-none transition-colors"
-              >
-                <span>Sign In</span>
-              </button>
-            ) : (
-              <div className="px-4 py-2">
-                <div className="flex items-center gap-3 mb-2">
-                  {user.avatar ? (
-                    <img 
-                      src={user.avatar} 
-                      alt={`${user.displayName || user.name}'s avatar`} 
-                      className="w-8 h-8 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                      {(user.displayName || user.name || "U").charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.displayName || user.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
-                  </div>
-                </div>
-                <div className="space-y-1 mt-3 border-t pt-2 dark:border-gray-700">
-                  <Link
-                    href="/profile"
-                    className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    href="/preferences"
-                    className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Preferences
-                  </Link>
-                  <Link
-                    href="/custom-categories"
-                    className="block px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Custom Categories
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      logout();
-                    }}
-                    className="block w-full text-left px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 font-medium text-red-600 dark:text-red-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            )}
-            {/* Mobile light/dark mode toggle */}
-            <Button
-              color="gray"
-              pill
-              onClick={() => setIsDarkMode((prev) => !prev)}
-              className="mt-2 mx-4 p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 flex md:hidden"
-            >
-              {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
-            </Button>
-          </div>
+          
+          {/* Mobile light/dark mode toggle */}
+          <Button
+            color="gray"
+            pill
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className="mt-2 mx-4 p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 flex md:hidden"
+          >
+            {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
+          </Button>
+        </div>
       </div>
       )}
     </FlowbiteNavbar>

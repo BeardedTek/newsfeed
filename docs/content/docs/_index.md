@@ -29,6 +29,7 @@ NewsFeed is a modern news aggregation and reading platform that provides a clean
 - [Frontend](/docs/frontend/) - User interface and client-side components
 - [Platforms](/docs/platforms/) - Platform-specific information
 - [Worker](/docs/worker/) - Background processing and scheduled tasks
+- [Code Cleanup TODO](/docs/todo/) - List of potential code cleanup items
 
 ## Quick Links
 
