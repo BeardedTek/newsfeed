@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     casdoor_org_name: str = os.getenv("CASDOOR_ORG", "")
     casdoor_app_name: str = os.getenv("CASDOOR_APP_NAME", "")
     
+    # Frontend settings
+    frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    
+    # Cloudflare Turnstile settings
+    cloudflare_turnstile_secret_key: str = os.getenv("CLOUDFLARE_TURNSTILE_SECRET_KEY", "")
+    cloudflare_turnstile_site_key: str = os.getenv("CLOUDFLARE_TURNSTILE_SITE_KEY", "")
+    cloudflare_turnstile_enable: bool = os.getenv("CLOUDFLARE_TURNSTILE_ENABLE", "true").lower() in ("true", "1", "t", "yes")
+    
     # Application settings
     debug: bool = os.getenv("BACKEND_DEBUG", "false").lower() in ("true", "1", "t", "yes")
     

@@ -30,6 +30,14 @@ export default function EnvLoader({ children }: EnvLoaderProps) {
       'NEXT_PUBLIC_CASDOOR_REDIRECT_URI'
     ];
     
+    // Check if Turnstile is enabled
+    const turnstileEnabled = window.ENV_CONFIG['NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_ENABLE'] !== 'false';
+    
+    // If Turnstile is enabled, add the site key to required variables
+    if (turnstileEnabled) {
+      requiredVars.push('NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY');
+    }
+    
     const missingVars = requiredVars.filter(key => !window.ENV_CONFIG[key]);
     
     if (missingVars.length > 0) {

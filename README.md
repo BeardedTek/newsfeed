@@ -94,6 +94,7 @@ For more information about the documentation, see [docs/README.md](docs/README.m
 - Running FreshRSS Instance
 - Node.js 18+ (for local development)
 - Python 3.11+ (for local development)
+- Cloudflare Turnstile account (for CAPTCHA on signup)
 
 ## Quick Start
 
@@ -111,7 +112,14 @@ For more information about the documentation, see [docs/README.md](docs/README.m
       - Enter an API password under `External access via API`
       - Save this password for the next step
 
-3. Set up environment variables:
+3. Set up Cloudflare Turnstile:
+   - Go to [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/)
+   - Sign up or log in to your Cloudflare account
+   - Create a new site key
+   - Note down your site key and secret key
+   - Add your site key to the frontend environment and secret key to the backend environment
+
+4. Set up environment variables:
       Edit `env/frontend`
 
    ```
@@ -129,6 +137,10 @@ For more information about the documentation, see [docs/README.md](docs/README.m
    CASDOOR_APP_NAME=newsfeed
    CASDOOR_ORG_NAME=newsfeed
    CASDOOR_REDIRECT_URI=http://localhost:8880/callback
+   
+   # Cloudflare Turnstile
+CLOUDFLARE_TURNSTILE_SITE_KEY=your-site-key
+CLOUDFLARE_TURNSTILE_ENABLE=true  # Set to false to disable Turnstile
    ```
 
    > **Note:** The frontend environment variables are automatically mapped to include the `NEXT_PUBLIC_` prefix at runtime, so you don't need to include it in your environment files.
@@ -144,6 +156,13 @@ For more information about the documentation, see [docs/README.md](docs/README.m
    FRESHRSS_API_PASSWORD=newsfeed
    OLLAMA_URL=http://ollama:11434
    OLLAMA_MODEL=LLAMA3.2:3B
+   
+   # Frontend URL for email verification
+   FRONTEND_URL=http://localhost:8880
+   
+   # Cloudflare Turnstile
+CLOUDFLARE_TURNSTILE_SECRET_KEY=your-secret-key
+CLOUDFLARE_TURNSTILE_ENABLE=true  # Set to false to disable Turnstile
 
    # Worker configuration
    WORKER_PROCESS_ARTICLES_INTERVAL=15       # How often to process articles (in minutes)
